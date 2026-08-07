@@ -5,6 +5,8 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
 import '../widgets/app_toast.dart';
 
 /// WhatsApp-style image picker used before sending a photo in a chat:
@@ -212,7 +214,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
 
   Widget _buildSend(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final sendGradient = const [Color(0xFF5B2DD3), Color(0xFF8B5CF6)];
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final sendGradient = style.sendGradient;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -290,12 +294,6 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                         icon: const Icon(Icons.crop_free, color: Colors.white),
                         onPressed: () => setState(() => _cropMode = false),
                       ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        tooltip: 'Apply crop',
-                        icon: const Icon(Icons.check, color: Colors.white),
-                        onPressed: _busy ? null : _applyCrop,
-                      ),
                     ] else ...[
                       IconButton(
                         tooltip: 'Save to device',
@@ -340,8 +338,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                         ? null
                         : [
                             BoxShadow(
-                              color: const Color(0xFF8B5CF6)
-                                  .withValues(alpha: 0.55),
+                              color: sendGradient.last.withValues(alpha: 0.55),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),

@@ -948,9 +948,8 @@ class _ConnectionOverlay extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: ShapeBox(
                       shape: style.cardShape,
-                      color: scheme.surfaceContainerHigh.withValues(
-                        alpha: 0.95,
-                      ),
+                      color: (style.panelColor ?? scheme.surfaceContainerHigh)
+                          .withValues(alpha: 0.95),
                       borderColor:
                           style.edgeColor ?? accent.withValues(alpha: 0.3),
                       borderWidth: style.borderWidth > 0

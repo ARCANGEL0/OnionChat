@@ -5,9 +5,22 @@ import 'package:flutter/material.dart';
 class SurfaceShape {
   final BorderRadius rounded;
   final BevelSpec? bevel;
+  final bool tailBottomLeft;
+  final bool tailBottomRight;
+  final double tailSize;
 
-  const SurfaceShape.rounded(this.rounded) : bevel = null;
-  const SurfaceShape.beveled(this.bevel) : rounded = BorderRadius.zero;
+  const SurfaceShape.rounded(
+    this.rounded, {
+    this.tailBottomLeft = false,
+    this.tailBottomRight = false,
+    this.tailSize = 12,
+  }) : bevel = null;
+
+  const SurfaceShape.beveled(this.bevel)
+      : rounded = BorderRadius.zero,
+        tailBottomLeft = false,
+        tailBottomRight = false,
+        tailSize = 0;
 
   bool get isBeveled => bevel != null && bevel!.any;
 
@@ -16,6 +29,24 @@ class SurfaceShape {
 
   BorderRadius get roundedOrTight =>
       isBeveled ? const BorderRadius.all(Radius.circular(2)) : rounded;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SurfaceShape &&
+      other.rounded == rounded &&
+      other.bevel == bevel &&
+      other.tailBottomLeft == tailBottomLeft &&
+      other.tailBottomRight == tailBottomRight &&
+      other.tailSize == tailSize;
+
+  @override
+  int get hashCode => Object.hash(
+        rounded,
+        bevel,
+        tailBottomLeft,
+        tailBottomRight,
+        tailSize,
+      );
 
   ShapeBorder toShapeBorder() {
     final b = bevel;
@@ -27,6 +58,15 @@ class SurfaceShape {
 Path surfacePath(Rect rect, SurfaceShape shape) {
   final b = shape.bevel;
   if (b != null && b.any) return _bevelPath(rect, b);
+  if (shape.tailBottomLeft || shape.tailBottomRight) {
+    return _roundedTailPath(
+      rect,
+      shape.rounded,
+      tailLeft: shape.tailBottomLeft,
+      tailRight: shape.tailBottomRight,
+      tail: shape.tailSize,
+    );
+  }
   return Path()
     ..addRRect(
       RRect.fromRectAndCorners(
@@ -37,6 +77,46 @@ Path surfacePath(Rect rect, SurfaceShape shape) {
         bottomRight: shape.rounded.bottomRight,
       ),
     );
+}
+
+Path _roundedTailPath(
+  Rect rect,
+  BorderRadius r, {
+  required bool tailLeft,
+  required bool tailRight,
+  required double tail,
+}) {
+  final w = rect.width;
+  final h = rect.height;
+  final t = math.min(tail, math.min(w, h) / 4);
+
+  final body = Path()
+    ..addRRect(
+      RRect.fromRectAndCorners(
+        Rect.fromLTWH(0, 0, w, h),
+        topLeft: r.topLeft,
+        topRight: r.topRight,
+        bottomLeft: r.bottomLeft,
+        bottomRight: r.bottomRight,
+      ).scaleRadii(),
+    );
+
+  final tip = Path()
+    ..moveTo(w - t * 1.25, h)
+    ..quadraticBezierTo(w + t * 0.28, h - t * 0.05, w + t * 0.95, h - t * 1.15)
+    ..quadraticBezierTo(w + t * 0.05, h - t * 1.30, w - t * 0.05, h - t * 2.05)
+    ..close();
+
+  final placed = tailRight
+      ? tip
+      : tip.transform(
+          (Matrix4.identity()
+                ..translateByDouble(w, 0, 0, 1)
+                ..scaleByDouble(-1, 1, 1, 1))
+              .storage,
+        );
+
+  return Path.combine(PathOperation.union, body, placed);
 }
 
 Path _bevelPath(Rect rect, BevelSpec b) {
@@ -102,6 +182,19 @@ class BevelSpec {
   });
 
   bool get any => topLeft || topRight || bottomLeft || bottomRight;
+
+  @override
+  bool operator ==(Object other) =>
+      other is BevelSpec &&
+      other.size == size &&
+      other.topLeft == topLeft &&
+      other.topRight == topRight &&
+      other.bottomLeft == bottomLeft &&
+      other.bottomRight == bottomRight;
+
+  @override
+  int get hashCode =>
+      Object.hash(size, topLeft, topRight, bottomLeft, bottomRight);
 }
 // here are the current themes etc, and their respective 'logos'
 // will add more futurely
@@ -132,12 +225,17 @@ enum ThemeStyle {
           bottomRight: Radius.circular(mine ? 4 : 16),
         ));
       case ThemeStyle.midnight:
-        return SurfaceShape.rounded(BorderRadius.only(
-          topLeft: const Radius.circular(12),
-          topRight: const Radius.circular(12),
-          bottomLeft: Radius.circular(mine ? 12 : 6),
-          bottomRight: Radius.circular(mine ? 6 : 12),
-        ));
+        return SurfaceShape.rounded(
+          BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(mine ? 20 : 7),
+            bottomRight: Radius.circular(mine ? 7 : 20),
+          ),
+          tailBottomRight: mine,
+          tailBottomLeft: !mine,
+          tailSize: 8,
+        );
       case ThemeStyle.matrix:
         return const SurfaceShape.rounded(BorderRadius.zero);
       case ThemeStyle.lain:
@@ -358,6 +456,26 @@ enum ThemeStyle {
         ThemeStyle.cyberpunk => 1.6,
         ThemeStyle.bladerunner => 1.2,
         _ => 0,
+      };
+
+  Color? get panelColor {
+    switch (this) {
+      case ThemeStyle.midnight:
+        return const Color(0xFF102440);
+      default:
+        return null;
+    }
+  }
+
+  List<Color> get sendGradient => switch (this) {
+        ThemeStyle.midnight => const [Color(0xFF3EC6F8), Color(0xFF0F3E91)],
+        ThemeStyle.matrix => const [Color(0xFF00FF41), Color(0xFF007A20)],
+        ThemeStyle.lain => const [Color(0xFFFF4D8D), Color(0xFF8A0030)],
+        ThemeStyle.cyberpunk =>
+          const [Color(0xFFFCE300), Color(0xFFFF1A3C)],
+        ThemeStyle.bladerunner =>
+          const [Color(0xFF00E5FF), Color(0xFFFF2A6D)],
+        _ => const [Color(0xFF5B2DD3), Color(0xFF8B5CF6)],
       };
 
   Path previewPath(Rect rect) {

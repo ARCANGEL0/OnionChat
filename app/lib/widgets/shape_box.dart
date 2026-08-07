@@ -66,7 +66,7 @@ class _ShapeClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(covariant _ShapeClipper oldClipper) =>
-      oldClipper.shape.isBeveled != shape.isBeveled;
+      oldClipper.shape != shape;
 }
 
 class _SurfacePainter extends CustomPainter {
@@ -134,7 +134,7 @@ class _SurfacePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SurfacePainter oldDelegate) =>
-      oldDelegate.shape.isBeveled != shape.isBeveled ||
+      oldDelegate.shape != shape ||
       oldDelegate.color != color ||
       oldDelegate.gradient != gradient ||
       oldDelegate.borderColor != borderColor ||

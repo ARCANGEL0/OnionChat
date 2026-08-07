@@ -331,6 +331,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
     final terminal = matrix || lain;
+    final midnightFill = style == ThemeStyle.midnight
+        ? scheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : null;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -363,6 +366,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 onPressed: _randomizeName,
                 tooltip: 'Randomize',
               ),
+              filled: midnightFill != null ? true : null,
+              fillColor: midnightFill,
             ),
             onChanged: (_) => setState(() => _error = null),
           ).animate().fadeIn(duration: 250.ms, delay: 150.ms),
@@ -388,6 +393,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   ),
                 ],
               ),
+              filled: midnightFill != null ? true : null,
+              fillColor: midnightFill,
             ),
             onChanged: (_) => setState(() => _error = null),
           ).animate().fadeIn(duration: 250.ms, delay: 200.ms),

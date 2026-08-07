@@ -134,6 +134,9 @@ class _OnionChatAppState extends State<OnionChatApp>
         elevation: 0,
         clipBehavior: Clip.antiAlias,
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: style.panelColor ?? scheme.surfaceContainer,
+      ),
       filledButtonTheme: FilledButtonThemeData(style: filledButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: style == ThemeStyle.matrix || style == ThemeStyle.lain

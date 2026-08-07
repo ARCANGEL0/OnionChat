@@ -290,6 +290,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
     final terminal = matrix || lain;
+    final midnightFill = style == ThemeStyle.midnight
+        ? scheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : null;
     final fieldBorder = inputFieldBorder(style, 14,
         width: style.borderWidth > 0 ? style.borderWidth : 1.2);
     final fieldFocused = inputFieldBorder(style, 14, width: 1.8);
@@ -333,6 +336,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
             border: fieldBorder,
             enabledBorder: fieldBorder,
             focusedBorder: fieldFocused,
+            filled: midnightFill != null ? true : null,
+            fillColor: midnightFill,
           ),
         ),
         const SizedBox(height: 16),
@@ -353,6 +358,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
             border: fieldBorder,
             enabledBorder: fieldBorder,
             focusedBorder: fieldFocused,
+            filled: midnightFill != null ? true : null,
+            fillColor: midnightFill,
           ),
         ),
         const SizedBox(height: 16),

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/tor_engine.dart';
+import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
 
 /// Shows live Tor bootstrap progress (reads the daemon's log lines) with a
 /// pulsing onion icon.
@@ -41,8 +43,11 @@ class _TorProgressCardState extends State<TorProgressCard> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     return Card(
       elevation: 4,
+      color: style.panelColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),

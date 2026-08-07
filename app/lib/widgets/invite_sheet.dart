@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/room.dart';
+import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
 import 'app_toast.dart';
 
 /// Bottom sheet showing the room's invite details: onion address, optional password, and a scannable QR code.
@@ -125,10 +127,12 @@ class _CopyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: style.panelColor ?? scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(

@@ -236,17 +236,15 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Flexible(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: nameColor,
-                  letterSpacing: 0.4,
-                ),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: nameColor,
+                letterSpacing: 0.4,
               ),
             ),
             if (showTs) ...[
@@ -270,13 +268,15 @@ class MessageBubble extends StatelessWidget {
             color: chatTextColor ?? neon,
             fontSize: chatFontSize,
             fontFamily: chatFont.isEmpty ? null : chatFont,
+            textAlign: mine ? TextAlign.right : TextAlign.left,
           ),
       ],
     );
 
     final senderColor = _senderColor(Theme.of(context).colorScheme);
     final row = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          mine ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (!mine) ...[
@@ -294,11 +294,17 @@ class MessageBubble extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.7,
+        Flexible(
+          child: Align(
+            alignment:
+                mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.62,
+              ),
+              child: line,
+            ),
           ),
-          child: line,
         ),
         if (mine) ...[
           const SizedBox(width: 8),
@@ -316,12 +322,9 @@ class MessageBubble extends StatelessWidget {
       ],
     );
 
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: _hasMenu ? () => _showMenu(context) : null,
-        child: row,
-      ),
+    return GestureDetector(
+      onLongPress: _hasMenu ? () => _showMenu(context) : null,
+      child: row,
     ).animate().fadeIn(duration: 200.ms).slideX(
           begin: mine ? 0.5 : -0.5,
           end: 0,
@@ -658,6 +661,7 @@ class MatrixNeonText extends StatefulWidget {
   final Color color;
   final double fontSize;
   final String? fontFamily;
+  final TextAlign? textAlign;
 
   const MatrixNeonText({
     super.key,
@@ -665,6 +669,7 @@ class MatrixNeonText extends StatefulWidget {
     required this.color,
     this.fontSize = 15,
     this.fontFamily,
+    this.textAlign,
   });
 
   @override
@@ -699,6 +704,7 @@ class _MatrixNeonTextState extends State<MatrixNeonText>
           opacity: opacity,
           child: Text(
             widget.text,
+            textAlign: widget.textAlign,
             style: TextStyle(
               fontSize: widget.fontSize,
               height: 1.3,

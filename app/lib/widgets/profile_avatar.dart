@@ -23,11 +23,13 @@ class ProfileAvatar extends StatelessWidget {
     final bg = color ?? Theme.of(context).colorScheme.primary;
     final initial = this.initial.trim();
     final hasImage = avatar != null && avatar!.isNotEmpty;
-    final isLain =
-        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle) ==
-            ThemeStyle.lain;
-    final radius = BorderRadius.circular(size * 0.22);
-    final shape = isLain ? BoxShape.rectangle : BoxShape.circle;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final isLain = style == ThemeStyle.lain;
+    final isMatrix = style == ThemeStyle.matrix;
+    final square = isLain || isMatrix;
+    final radius = isLain ? BorderRadius.circular(size * 0.22) : BorderRadius.zero;
+    final shape = square ? BoxShape.rectangle : BoxShape.circle;
 
     Widget child;
     if (hasImage) {
@@ -40,7 +42,7 @@ class ProfileAvatar extends StatelessWidget {
         gaplessPlayback: true,
         errorBuilder: (_, _, _) => _fallback(bg, initial, shape, radius),
       );
-      child = isLain
+      child = square
           ? ClipRRect(borderRadius: radius, child: image)
           : ClipOval(child: image);
     } else {
@@ -52,7 +54,7 @@ class ProfileAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: shape,
-        borderRadius: isLain ? radius : null,
+        borderRadius: square ? radius : null,
         boxShadow: [BoxShadow(color: bg.withValues(alpha: 0.3), blurRadius: 5)],
       ),
       child: child,

@@ -294,13 +294,11 @@ class MessageBubble extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Flexible(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.7,
-            ),
-            child: line,
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.7,
           ),
+          child: line,
         ),
         if (mine) ...[
           const SizedBox(width: 8),

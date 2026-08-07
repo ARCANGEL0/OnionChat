@@ -325,7 +325,7 @@ enum ThemeStyle {
   Color? get edgeColor {
     final c = switch (this) {
       ThemeStyle.matrix => 0xFF00FF41,
-      ThemeStyle.lain => 0xFF00FFFF,
+      ThemeStyle.lain => 0xFF4A6B6B,
       ThemeStyle.cyberpunk => 0xFF00F0FF,
       ThemeStyle.bladerunner => 0xFFFFB347,
       _ => null,
@@ -346,7 +346,7 @@ enum ThemeStyle {
 
   double get glowBlur => switch (this) {
         ThemeStyle.matrix => 10,
-        ThemeStyle.lain => 12,
+        ThemeStyle.lain => 5,
         ThemeStyle.cyberpunk => 14,
         ThemeStyle.bladerunner => 10,
         _ => 0,
@@ -354,7 +354,7 @@ enum ThemeStyle {
 
   double get borderWidth => switch (this) {
         ThemeStyle.matrix => 1.2,
-        ThemeStyle.lain => 1.4,
+        ThemeStyle.lain => 0.8,
         ThemeStyle.cyberpunk => 1.6,
         ThemeStyle.bladerunner => 1.2,
         _ => 0,
@@ -409,6 +409,15 @@ Path _blobPath(Rect rect) {
 
 OutlineInputBorder inputFieldBorder(ThemeStyle style, double radius,
     {double width = 1.2}) {
+  if (style == ThemeStyle.lain) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(2),
+      borderSide: BorderSide(
+        color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+        width: width,
+      ),
+    );
+  }
   final r = style == ThemeStyle.matrix ? 0.0 : radius;
   return OutlineInputBorder(
     borderRadius: BorderRadius.circular(r),

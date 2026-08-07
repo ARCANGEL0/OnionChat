@@ -288,6 +288,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
     final style =
         ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     final matrix = style == ThemeStyle.matrix;
+    final lain = style == ThemeStyle.lain;
+    final terminal = matrix || lain;
     final fieldBorder = inputFieldBorder(style, 14,
         width: style.borderWidth > 0 ? style.borderWidth : 1.2);
     final fieldFocused = inputFieldBorder(style, 14, width: 1.8);
@@ -369,13 +371,18 @@ class _ConnectScreenState extends State<ConnectScreen> {
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: matrix
-                  ? BorderRadius.zero
+              borderRadius: terminal
+                  ? const BorderRadius.all(Radius.circular(2))
                   : const BorderRadius.all(Radius.circular(14)),
             ),
             foregroundColor: matrix ? const Color(0xFF00FF41) : null,
-            side: matrix
-                ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
+            side: terminal
+                ? BorderSide(
+                    color: matrix
+                        ? const Color(0xFF00FF41)
+                        : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                    width: 1.2,
+                  )
                 : null,
           ),
           icon: const Icon(Icons.qr_code_scanner),
@@ -409,14 +416,19 @@ class _ConnectScreenState extends State<ConnectScreen> {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: matrix
-                  ? BorderRadius.zero
+              borderRadius: terminal
+                  ? const BorderRadius.all(Radius.circular(2))
                   : const BorderRadius.all(Radius.circular(16)),
             ),
             backgroundColor: matrix ? Colors.transparent : null,
             foregroundColor: matrix ? const Color(0xFF00FF41) : null,
-            side: matrix
-                ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
+            side: terminal
+                ? BorderSide(
+                    color: matrix
+                        ? const Color(0xFF00FF41)
+                        : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                    width: 1,
+                  )
                 : null,
           ),
           icon: const Icon(Icons.call_merge_rounded),

@@ -7,10 +7,6 @@ class AppSettings {
   /// Default logo/brand color (rgb(93, 59, 133)).
   static const int defaultLogoColor = 0xFF5D3B85;
 
-  static const String modeSystem = 'system';
-  static const String modeLight = 'light';
-  static const String modeDark = 'dark';
-
   /// Selected theme template (see ThemeStyle ids). Drives the shape language
   /// of the whole app (bubbles, input bar, buttons, cards).
   String themeStyle;
@@ -18,9 +14,6 @@ class AppSettings {
   /// Primary/interactive color (buttons, toggles, highlights, FAB). Seeds the
   /// whole color scheme.
   int accentColor;
-
-  /// One of [modeSystem], [modeLight], [modeDark].
-  String themeMode;
 
   /// Global chat wallpaper. `null` = default accent color; `asset:<name>` =
   /// bundled wallpaper; otherwise an absolute path to a custom image.
@@ -178,7 +171,6 @@ class AppSettings {
 
   AppSettings({
     required this.accentColor,
-    required this.themeMode,
     this.themeStyle = 'default',
     this.globalWallpaper,
     this.avatar,
@@ -271,7 +263,6 @@ this.mainFont = '',
 
   factory AppSettings.defaults() => AppSettings(
         accentColor: defaultAccent,
-        themeMode: modeDark,
         logoColor: defaultLogoColor,
         chatBackground: 0xFF1A0F2E, // very dark purple
         background: 0xFF140A1E, // even darker for main pages
@@ -337,7 +328,6 @@ this.mainFont = '',
 
   AppSettings copy() => AppSettings(
         accentColor: accentColor,
-        themeMode: themeMode,
         themeStyle: themeStyle,
         globalWallpaper: globalWallpaper,
         avatar: avatar,
@@ -431,7 +421,6 @@ this.mainFont = '',
   /// All appearance fields as a JSON map (used by the theme import/export).
   Map<String, dynamic> appearanceJson() => {
         'accent': accentColor,
-        'themeMode': themeMode,
         'themeStyle': themeStyle,
         'wallpaper': globalWallpaper,
         'avatar': avatar,
@@ -512,7 +501,6 @@ this.mainFont = '',
 
   Map<String, dynamic> toJson() => {
         'accentColor': accentColor,
-        'themeMode': themeMode,
         'themeStyle': themeStyle,
         'globalWallpaper': globalWallpaper,
         'avatar': avatar,
@@ -605,7 +593,6 @@ this.mainFont = '',
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
         accentColor: json['accentColor'] as int? ?? defaultAccent,
-        themeMode: json['themeMode'] as String? ?? modeDark,
         themeStyle: json['themeStyle'] as String? ?? 'default',
         globalWallpaper: json['globalWallpaper'] as String?,
         avatar: json['avatar'] as String?,

@@ -14,6 +14,15 @@ enum AppToastStyle { info, error }
 class AppToast {
   static final _ToastHost _host = _ToastHost();
 
+  /// The app's root overlay, registered by [AppToast.attach]. Lets a toast
+  /// resolve a valid overlay even when the caller's [BuildContext] sits above
+  /// the Navigator (which has no [Overlay] ancestor to walk up to).
+  static OverlayState? overlay;
+
+  static void attach(OverlayState? overlayState) {
+    overlay = overlayState;
+  }
+
   static void show(
     BuildContext context,
     String message, {
@@ -65,7 +74,8 @@ class _ToastHost {
       return;
     }
 
-    _overlay ??= Overlay.of(context, rootOverlay: true);
+    _overlay ??= AppToast.overlay ?? Overlay.of(context, rootOverlay: true);
+    if (_overlay == null) return;
     if (_entry == null) {
       _entry = _buildEntry();
       _overlay!.insert(_entry!);

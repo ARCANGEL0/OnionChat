@@ -12,27 +12,13 @@ import 'media_content.dart';
 import 'profile_avatar.dart';
 import 'shape_box.dart';
 
-/// A single chat line: system notices, sent messages (right) and received
-/// messages (left). Each message shows an avatar, the sender's username and a
-/// timestamp in a small header above the text, like a modern messenger.
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final String? myAvatar;
-
-  /// The current display name of the local user. Own messages show this
-  /// (live-updating when the persona changes) instead of a fixed "You".
   final String? myName;
-
-  /// Avatar of the sender for received messages (from the roster when known).
   final String? theirAvatar;
-
-  /// Called when the sender's avatar (left side) is tapped.
   final ValueChanged<String>? onAvatarTap;
-
-  /// Called when your own avatar (right side) is tapped.
   final VoidCallback? onMyAvatarTap;
-
-  /// Long-press menu actions (handled by the screen).
   final VoidCallback? onCopy;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -54,8 +40,12 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     if (message.isSystem) return _SystemNotice(text: message.text);
 
-    if (ChatTheme.of(context).style == ThemeStyle.matrix) {
+    final style = ChatTheme.of(context).style;
+    if (style == ThemeStyle.matrix) {
       return _buildMatrix(context);
+    }
+    if (style == ThemeStyle.lain) {
+      return _buildLain(context);
     }
 
     final scheme = Theme.of(context).colorScheme;
@@ -75,7 +65,6 @@ class MessageBubble extends StatelessWidget {
         ? 'You'
         : myName!.trim();
     final name = mine ? mineName : message.username;
-    final style = chat.style;
     final edge = style.edgeColor;
     final glow = style.glowColor;
     final gradient = style.gradientBubbles
@@ -343,6 +332,136 @@ class MessageBubble extends StatelessWidget {
         );
   }
 
+  Widget _buildLain(BuildContext context) {
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final scheme = Theme.of(context).colorScheme;
+    final mine = message.mine;
+    final showTs = message.ts.isNotEmpty;
+    final mineName = myName == null || myName!.trim().isEmpty
+        ? 'You'
+        : myName!.trim();
+    final name = mine ? mineName : message.username;
+    final senderColor = _senderColor(scheme);
+    final nameColor = mine
+        ? const Color(0xFF8C7AA8)
+        : Color.lerp(senderColor, const Color(0xFF9A9A9A), 0.35)!;
+    final chatFont = s.chatFont.trim();
+    final chatFontSize = s.chatFontSize;
+    final chatTextColor = s.chatTextColor != null
+        ? Color(s.chatTextColor!)
+        : null;
+    final msgColor = chatTextColor ??
+        (mine
+            ? const Color(0xFFD8CFE6)
+            : const Color(0xFFB1A8C2));
+
+    final line = Column(
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: LainGlitchText(
+                text: name,
+                color: nameColor,
+                fontSize: 13,
+                bold: true,
+                maxLines: 1,
+              ),
+            ),
+            if (showTs) ...[
+              const SizedBox(width: 8),
+              Text(
+                message.ts,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: const Color(0xFF5C5470).withValues(alpha: 0.85),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 3),
+        if (message.isMedia)
+          MediaContent(message: message)
+        else
+          Text(
+            message.text,
+            style: TextStyle(
+              fontSize: chatFontSize,
+              height: 1.35,
+              color: msgColor,
+              fontFamily: chatFont.isEmpty ? null : chatFont,
+              letterSpacing: 0.2,
+            ),
+          ),
+      ],
+    );
+
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!mine) ...[
+          InkWell(
+            onTap: onAvatarTap == null
+                ? null
+                : () => onAvatarTap!(message.username),
+            customBorder: const CircleBorder(),
+            child: ProfileAvatar(
+              avatar: theirAvatar,
+              initial: _initialOf(message.username),
+              size: 26,
+              color: senderColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            child: line,
+          ),
+        ),
+        if (mine) ...[
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: onMyAvatarTap,
+            customBorder: const CircleBorder(),
+            child: ProfileAvatar(
+              avatar: myAvatar,
+              initial: 'You',
+              size: 26,
+              color: senderColor,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: GestureDetector(
+        onLongPress: _hasMenu ? () => _showMenu(context) : null,
+        child: row,
+      ),
+    ).animate().fadeIn(duration: 200.ms).slideX(
+          begin: mine ? 0.5 : -0.5,
+          end: 0,
+          duration: 220.ms,
+          curve: Curves.easeOut,
+        );
+  }
+
   void _showMenu(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final mine = message.mine;
@@ -428,11 +547,29 @@ class _SystemNotice extends StatelessWidget {
     final size = s.noticeFontSize;
     final glow = bg.withValues(alpha: 0.55);
 
-    // Only "X has connected / has disconnected" tips get the little presence
-    // dot; each user gets their own deterministic color from the palette.
     final presenceUser = _presenceUser(text);
     final dotColor =
         presenceUser != null ? _userColor(presenceUser) : null;
+    final isLain = style == ThemeStyle.lain;
+    final noticeEdge = isLain
+        ? const Color(0xFF00FFFF).withValues(alpha: 0.85)
+        : (style.edgeColor ?? glow);
+    final noticeGlow = isLain ? const Color(0xFF00FFFF) : style.glowColor;
+    final noticeBlur = isLain ? 9.0 : style.glowBlur;
+    final noticeWidth = isLain
+        ? 1.2
+        : (style.borderWidth > 0 ? style.borderWidth : 1.0);
+    final gradientColors = isLain
+        ? [
+            bg.withValues(alpha: 0.35),
+            bg.withValues(alpha: 0.5),
+            bg.withValues(alpha: 0.35),
+          ]
+        : [
+            bg.withValues(alpha: 0.9),
+            bg,
+            bg.withValues(alpha: 0.9),
+          ];
 
     return Center(
       child: Padding(
@@ -442,16 +579,12 @@ class _SystemNotice extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [
-              bg.withValues(alpha: 0.9),
-              bg,
-              bg.withValues(alpha: 0.9),
-            ],
+            colors: gradientColors,
           ),
-          borderColor: style.edgeColor ?? glow,
-          borderWidth: style.borderWidth > 0 ? style.borderWidth : 1,
-          glowColor: style.glowColor,
-          glowBlur: style.glowBlur,
+          borderColor: noticeEdge,
+          borderWidth: noticeWidth,
+          glowColor: noticeGlow,
+          glowBlur: noticeBlur,
           shadow: BoxShadow(
             color: glow.withValues(alpha: 0.35),
             blurRadius: 10,
@@ -503,8 +636,6 @@ class _SystemNotice extends StatelessWidget {
     );
   }
 
-  /// Extracts the username from "X has connected!" / "X has disconnected."
-  /// Returns `null` for any other system notice.
   String? _presenceUser(String text) {
     final connected = RegExp(r'^(.*?)\s+has connected[!.]?$');
     final disconnected = RegExp(r'^(.*?)\s+has disconnected[!.]?$');
@@ -515,7 +646,6 @@ class _SystemNotice extends StatelessWidget {
     return null;
   }
 
-  /// Deterministic per-user color from the standard user palette.
   Color _userColor(String username) {
     var hash = 0;
     for (final code in username.codeUnits) {
@@ -587,6 +717,87 @@ class _MatrixNeonTextState extends State<MatrixNeonText>
                   color: widget.color.withValues(alpha: glowB),
                   blurRadius: 16,
                 ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class LainGlitchText extends StatefulWidget {
+  final String text;
+  final Color color;
+  final double fontSize;
+  final String? fontFamily;
+  final bool bold;
+  final int? maxLines;
+
+  const LainGlitchText({
+    super.key,
+    required this.text,
+    required this.color,
+    this.fontSize = 15,
+    this.fontFamily,
+    this.bold = false,
+    this.maxLines,
+  });
+
+  @override
+  State<LainGlitchText> createState() => _LainGlitchTextState();
+}
+
+class _LainGlitchTextState extends State<LainGlitchText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 30000),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        final burst = t > 0.93 && t < 0.975;
+        final phase = (t - 0.93) / 0.045;
+        final jx = burst ? math.sin(phase * math.pi * 22.0) * 2.2 : 0.0;
+        final jy = burst ? math.cos(phase * math.pi * 27.0) * 1.2 : 0.0;
+        final glow = burst ? 1.0 : 0.0;
+        return Transform.translate(
+          offset: Offset(jx, jy),
+          child: Text(
+            widget.text,
+            maxLines: widget.maxLines,
+            overflow: widget.maxLines == null ? null : TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: widget.fontSize,
+              height: 1.3,
+              color: widget.color,
+              fontFamily: widget.fontFamily,
+              fontWeight: widget.bold ? FontWeight.w700 : FontWeight.w400,
+              letterSpacing: 0.4,
+              shadows: [
+                if (glow > 0)
+                  Shadow(
+                    color: const Color(0xFFFF2A6D).withValues(alpha: 0.22),
+                    blurRadius: 4,
+                    offset: const Offset(-1.2, 0),
+                  ),
+                if (glow > 0)
+                  Shadow(
+                    color: const Color(0xFF008080).withValues(alpha: 0.18),
+                    blurRadius: 4,
+                    offset: const Offset(1.2, 0),
+                  ),
               ],
             ),
           ),

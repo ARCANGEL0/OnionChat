@@ -12,6 +12,7 @@ import '../state/theme_controller.dart';
 import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/chat_picture.dart';
+import '../widgets/empty_states.dart';
 import 'chat_screen.dart';
 import 'connect_screen.dart';
 import 'create_room_screen.dart';
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, _) {
           final s = ThemeController.instance.settings;
           final content = _rooms.isEmpty
-              ? const _EmptyState()
+              ? const ThemedEmptyState()
               : _RoomList(
                   rooms: _rooms,
                   onTap: _openRoom,
@@ -179,58 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.forum_outlined, size: 88, color: scheme.primary)
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .scaleY(begin: 1, end: 1.08)
-                .scaleX(begin: 1, end: 0.96)
-                .then()
-                .scaleY(begin: 1.08, end: 1)
-                .scaleX(begin: 0.96, end: 1)
-                .swap(builder: (_, child) => child!)
-                .shimmer(blendMode: BlendMode.srcATop)
-                .animate()
-                .fadeIn(duration: 600.ms),
-            const SizedBox(height: 24),
-            Text(
-              'No rooms yet',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 500.ms)
-                .slideY(begin: 0.3),
-            const SizedBox(height: 12),
-            Text(
-              'Create a room to get an anonymous .onion address, or connect '
-              'to a friend by namecode + password.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-            )
-                .animate()
-                .fadeIn(delay: 350.ms, duration: 500.ms)
-                .slideY(begin: 0.3),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _RoomList extends StatelessWidget {
   final List<Room> rooms;
   final void Function(Room) onTap;
@@ -251,7 +200,7 @@ class _RoomList extends StatelessWidget {
       itemBuilder: (context, i) {
         final room = rooms[i];
         final preview = room.lastMessage ?? (room.isOwner
-            ? 'Hosting this room — tap to open'
+            ? 'Chat created by you.'
             : 'Joined room');
         return Dismissible(
           key: ValueKey(room.id),
@@ -372,6 +321,7 @@ class _ActionMenuState extends State<_ActionMenu> {
     final style = ChatTheme.of(context).style;
 
     if (style == ThemeStyle.matrix) return _buildMatrix();
+    if (style == ThemeStyle.lain) return _buildLain();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -449,6 +399,36 @@ class _ActionMenuState extends State<_ActionMenu> {
           const SizedBox(height: 16),
         ],
         _MatrixFab(open: widget.open, onToggle: widget.onToggle),
+      ],
+    );
+  }
+
+  Widget _buildLain() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.5, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: widget.open
+              ? _LainWindow(
+                  key: const ValueKey('lain-window'),
+                  onCreate: widget.onCreate,
+                  onConnect: widget.onConnect,
+                )
+              : const SizedBox(key: ValueKey('lain-hidden')),
+        ),
+        const SizedBox(height: 14),
+        _LainFab(open: widget.open, onToggle: widget.onToggle),
       ],
     );
   }
@@ -569,6 +549,175 @@ class _MatrixFab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LainWindow extends StatelessWidget {
+  final VoidCallback onCreate;
+  final VoidCallback onConnect;
+
+  const _LainWindow({
+    super.key,
+    required this.onCreate,
+    required this.onConnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mainFont = ThemeController.instance.settings.mainFont.trim();
+    final font = mainFont.isEmpty ? null : mainFont;
+    return Container(
+      width: 216,
+      decoration: BoxDecoration(
+        color: const Color(0xFF120E1E),
+        border: Border.all(
+          color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+          width: 1,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x73000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 28,
+            color: const Color(0xFF1A1430),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  color: const Color(0xFFFF2A6D).withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'WIRED://',
+                  style: TextStyle(
+                    color: const Color(0xFF7A708A),
+                    fontSize: 12,
+                    fontFamily: font,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '[-]',
+                  style: TextStyle(
+                    color: const Color(0xFF7A708A),
+                    fontSize: 11,
+                    fontFamily: font,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _LainWindowRow(
+            prompt: '>',
+            label: 'CREATE ROOM',
+            onTap: onCreate,
+          ),
+          Container(
+            height: 1,
+            color: const Color(0xFF4A6B6B).withValues(alpha: 0.25),
+          ),
+          _LainWindowRow(
+            prompt: '>',
+            label: 'CONNECT',
+            onTap: onConnect,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LainWindowRow extends StatelessWidget {
+  final String prompt;
+  final String label;
+  final VoidCallback onTap;
+
+  const _LainWindowRow({
+    required this.prompt,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mainFont = ThemeController.instance.settings.mainFont.trim();
+    final font = mainFont.isEmpty ? null : mainFont;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '> ',
+              style: TextStyle(
+                color: const Color(0xFF00B3B3),
+                fontFamily: font,
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                color: const Color(0xFFB1A8C2),
+                fontFamily: font,
+                fontSize: 14,
+                letterSpacing: 3,
+                shadows: const [
+                  Shadow(color: Color(0x22FF2A6D), blurRadius: 3),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LainFab extends StatelessWidget {
+  final bool open;
+  final VoidCallback onToggle;
+
+  const _LainFab({required this.open, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = open ? const Color(0xFF8B0000) : const Color(0xFF4A6B6B);
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: const Color(0xFF16121F),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: color.withValues(alpha: 0.7),
+            width: 1,
+          ),
+        ),
+        child: Icon(
+          open ? Icons.close : Icons.chat_bubble_outline_rounded,
+          color: open ? const Color(0xFFFF8A8A) : const Color(0xFFB1A8C2),
+          size: 26,
+        ),
+      ),
     );
   }
 }

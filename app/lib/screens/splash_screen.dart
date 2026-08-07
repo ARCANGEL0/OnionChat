@@ -6,13 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../models/app_settings.dart';
+import '../services/app_assets.dart';
 import '../state/theme_controller.dart';
 import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import 'home_screen.dart';
 
-/// Animated entry screen: the app icon with pulsing onion rings + name, then
-/// transitions to the home screen.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -51,6 +50,9 @@ class _SplashScreenState extends State<SplashScreen> {
     final s = tc.settings;
     if (ThemeStyle.fromId(s.themeStyle) == ThemeStyle.matrix) {
       return _matrixSplash(s);
+    }
+    if (ThemeStyle.fromId(s.themeStyle) == ThemeStyle.lain) {
+      return _lainSplash(s);
     }
     final scheme = Theme.of(context).colorScheme;
     final logoColor =
@@ -98,6 +100,41 @@ class _SplashScreenState extends State<SplashScreen> {
             )
                 .animate()
                 .fadeIn(duration: 600.ms, delay: 1000.ms),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _lainSplash(AppSettings s) {
+    final mainFont = s.mainFont.trim();
+    final bg = s.splashBackground != null
+        ? Color(s.splashBackground!)
+        : (s.background != null
+            ? Color(s.background!)
+            : const Color(0xFF0A0714));
+    return Scaffold(
+      backgroundColor: bg,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const _LainGlitchLogo(),
+            const SizedBox(height: 30),
+            Text(
+              'O n i o n C h a t',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 4,
+                color: const Color(0xFFD8CFE6),
+                fontFamily: mainFont.isEmpty ? null : mainFont,
+                shadows: const [
+                  Shadow(color: Color(0x4DFF2A6D), blurRadius: 5),
+                  Shadow(color: Color(0x338B0000), blurRadius: 12),
+                ],
+              ),
+            ).animate().fadeIn(duration: 900.ms, delay: 300.ms),
           ],
         ),
       ),
@@ -315,6 +352,81 @@ class _MatrixRainPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MatrixRainPainter oldDelegate) => true;
+}
+
+class _LainGlitchLogo extends StatefulWidget {
+  const _LainGlitchLogo();
+
+  @override
+  State<_LainGlitchLogo> createState() => _LainGlitchLogoState();
+}
+
+class _LainGlitchLogoState extends State<_LainGlitchLogo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 6000),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        final burst = t > 0.9 && t < 0.96;
+        final phase = (t - 0.9) / 0.06;
+        final sh = burst ? sin(phase * pi * 14.0) * 2.0 : 0.0;
+        final logo = Image.asset(
+          AppAssets.wiredLogo,
+          width: 100,
+          height: 100,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+        );
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            if (burst)
+              Opacity(
+                opacity: 0.25,
+                child: Transform.translate(
+                  offset: Offset(-sh, 0),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFFFF2A6D),
+                      BlendMode.srcIn,
+                    ),
+                    child: logo,
+                  ),
+                ),
+              ),
+            if (burst)
+              Opacity(
+                opacity: 0.25,
+                child: Transform.translate(
+                  offset: Offset(sh, 0),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF8B0000),
+                      BlendMode.srcIn,
+                    ),
+                    child: logo,
+                  ),
+                ),
+              ),
+            logo,
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _AppIconPulse extends StatefulWidget {

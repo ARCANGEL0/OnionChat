@@ -90,10 +90,9 @@ class _GlitchPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rand = math.Random(seed);
-    // Only ~14% of frames glitch.
     if (rand.nextDouble() > 0.14) return;
-    final cyan = Paint()..color = const Color(0x2200FFFF);
-    final magenta = Paint()..color = const Color(0x22FF00FF);
+    final cyan = Paint()..color = const Color(0x10A0FFFF);
+    final magenta = Paint()..color = const Color(0x10FF40FF);
     for (var i = 0; i < 3; i++) {
       final y = rand.nextDouble() * size.height;
       final h = 1.0 + rand.nextDouble() * 3.0;

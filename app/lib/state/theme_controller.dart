@@ -9,9 +9,9 @@ import '../models/app_settings.dart';
 import '../themes/theme_style.dart';
 import '../themes/theme_template.dart';
 
-/// Owns the app-wide appearance: per-element colors, dark/light mode, chat
-/// wallpaper, profile picture and Tor ports. Persists everything in
-/// shared_preferences, notifies listeners so the root MaterialApp rebuilds.
+/// Owns the app-wide appearance: per-element colors, chat wallpaper, profile
+/// picture and Tor ports. Persists everything in shared_preferences, notifies
+/// listeners so the root MaterialApp rebuilds.
 class ThemeController extends ChangeNotifier {
   ThemeController._();
   static final ThemeController instance = ThemeController._();
@@ -19,17 +19,6 @@ class ThemeController extends ChangeNotifier {
   static const _settingsKey = 'app_settings';
 
   AppSettings settings = AppSettings.defaults();
-
-  ThemeMode get themeMode {
-    switch (settings.themeMode) {
-      case AppSettings.modeLight:
-        return ThemeMode.light;
-      case AppSettings.modeSystem:
-        return ThemeMode.system;
-      default:
-        return ThemeMode.dark;
-    }
-  }
 
   /// The primary/button color (accent).
   Color get accentColor => Color(settings.accentColor);
@@ -52,11 +41,6 @@ class ThemeController extends ChangeNotifier {
     await _save();
   }
 
-  Future<void> setThemeMode(String mode) async {
-    settings = settings.copy()..themeMode = mode;
-    await _save();
-  }
-
   /// Sets only the shape language (bubble/input/button/card styles) without
   /// touching colors.
   Future<void> setThemeStyle(ThemeStyle style) async {
@@ -71,7 +55,6 @@ class ThemeController extends ChangeNotifier {
     final cur = settings;
     final app = template.settings;
     settings = app.copy()
-      ..themeMode = cur.themeMode
       ..globalWallpaper = cur.globalWallpaper
       ..membersWallpaper = cur.membersWallpaper
       ..mainWallpaper = cur.mainWallpaper
@@ -430,7 +413,6 @@ class ThemeController extends ChangeNotifier {
       if (map is! Map<String, dynamic>) return 'Not a valid theme file.';
       final s = settings.copy();
       if (map['accent'] is int) s.accentColor = map['accent'] as int;
-      if (map['themeMode'] is String) s.themeMode = map['themeMode'] as String;
       if (map['themeStyle'] is String) {
         s.themeStyle = ThemeStyle.fromId(map['themeStyle'] as String).id;
       }
@@ -509,12 +491,11 @@ class ThemeController extends ChangeNotifier {
 
   int? _intOrNull(dynamic v) => v is int ? v : null;
 
-  /// Reverts every appearance override to the theme defaults (colors, mode,
+  /// Reverts every appearance override to the theme defaults (colors,
   /// wallpaper and avatar). Tor ports are kept.
   Future<void> resetAppearance() async {
     settings = AppSettings(
       accentColor: AppSettings.defaultAccent,
-      themeMode: settings.themeMode,
       socksPort: settings.socksPort,
       controlPort: settings.controlPort,
       logoColor: AppSettings.defaultLogoColor,

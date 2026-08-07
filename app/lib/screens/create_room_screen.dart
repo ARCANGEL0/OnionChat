@@ -326,9 +326,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   }
 
   Widget _buildForm(ColorScheme scheme) {
-    final matrix =
-        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle) ==
-            ThemeStyle.matrix;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final matrix = style == ThemeStyle.matrix;
+    final lain = style == ThemeStyle.lain;
+    final terminal = matrix || lain;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -404,7 +406,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             picture: _chatPicture,
             onTap: _uploadChatPicture,
             onRandomize: _randomizeChatPicture,
-            matrix: matrix,
           ).animate().fadeIn(duration: 250.ms, delay: 350.ms),
           const SizedBox(height: 24),
           if (_error != null)
@@ -432,17 +433,22 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             onPressed: _creating ? null : _create,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: matrix
-                  ? const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(terminal ? 2 : 16),
+              ),
+              backgroundColor: terminal
+                  ? (matrix ? Colors.transparent : const Color(0xFF16121F))
+                  : null,
+              foregroundColor: terminal
+                  ? (matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2))
+                  : null,
+              side: terminal
+                  ? BorderSide(
+                      color: matrix
+                          ? const Color(0xFF00FF41)
+                          : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                      width: 1,
                     )
-                  : RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-              backgroundColor: matrix ? Colors.transparent : null,
-              foregroundColor: matrix ? const Color(0xFF00FF41) : null,
-              side: matrix
-                  ? const BorderSide(color: Color(0xFF00FF41), width: 1.2)
                   : null,
             ),
             icon: const Icon(Icons.add_chart),
@@ -552,18 +558,26 @@ class _ChatPicturePicker extends StatelessWidget {
   final String? picture;
   final VoidCallback onTap;
   final VoidCallback onRandomize;
-  final bool matrix;
 
   const _ChatPicturePicker({
     required this.picture,
     required this.onTap,
     required this.onRandomize,
-    required this.matrix,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final matrix = style == ThemeStyle.matrix;
+    final lain = style == ThemeStyle.lain;
+    final terminal = matrix || lain;
+    final borderColor = matrix
+        ? const Color(0xFF00FF41)
+        : const Color(0xFF4A6B6B).withValues(alpha: 0.7);
+    final iconColor =
+        matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2);
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -572,8 +586,11 @@ class _ChatPicturePicker extends StatelessWidget {
             aspectRatio: 16 / 9,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(terminal ? 2 : 16),
                 color: scheme.surfaceContainerHighest,
+                border: terminal
+                    ? Border.all(color: borderColor, width: 1)
+                    : null,
                 image: picture != null && picture!.startsWith('asset:')
                     ? DecorationImage(
                         image: AppAssets.chatPictureProvider(
@@ -599,12 +616,12 @@ class _ChatPicturePicker extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  decoration: matrix
+                  decoration: terminal
                       ? BoxDecoration(
-                          color: Colors.transparent,
+                          color: const Color(0xFF16121F),
                           shape: BoxShape.rectangle,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: const Color(0xFF00FF41), width: 1),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(color: borderColor, width: 1),
                         )
                       : BoxDecoration(
                           color: scheme.primary,
@@ -614,7 +631,7 @@ class _ChatPicturePicker extends StatelessWidget {
                   child: IconButton(
                     icon: Icon(
                       Icons.shuffle,
-                      color: matrix ? const Color(0xFF00FF41) : Colors.white,
+                      color: terminal ? iconColor : Colors.white,
                       size: 20,
                     ),
                     onPressed: onRandomize,
@@ -623,12 +640,12 @@ class _ChatPicturePicker extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  decoration: matrix
+                  decoration: terminal
                       ? BoxDecoration(
-                          color: Colors.transparent,
+                          color: const Color(0xFF16121F),
                           shape: BoxShape.rectangle,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: const Color(0xFF00FF41), width: 1),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(color: borderColor, width: 1),
                         )
                       : BoxDecoration(
                           color: scheme.primary,
@@ -638,7 +655,7 @@ class _ChatPicturePicker extends StatelessWidget {
                   child: IconButton(
                     icon: Icon(
                       Icons.edit,
-                      color: matrix ? const Color(0xFF00FF41) : Colors.white,
+                      color: terminal ? iconColor : Colors.white,
                       size: 20,
                     ),
                     onPressed: onTap,

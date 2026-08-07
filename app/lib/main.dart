@@ -8,6 +8,7 @@ import 'state/chat_theme.dart';
 import 'state/room_controller.dart';
 import 'state/theme_controller.dart';
 import 'themes/theme_style.dart';
+import 'widgets/app_toast.dart';
 import 'widgets/tap_click_sound.dart';
 import 'widgets/theme_fx.dart';
 
@@ -41,10 +42,15 @@ class OnionChatApp extends StatefulWidget {
 
 class _OnionChatAppState extends State<OnionChatApp>
     with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppToast.attach(_navKey.currentState?.overlay);
+    });
   }
 
   @override
@@ -89,6 +95,22 @@ class _OnionChatAppState extends State<OnionChatApp>
         s.mainFontSize > 0 ? s.mainFontSize / 14.0 : 1.0;
     final style = ThemeStyle.fromId(s.themeStyle);
     final cardShape = style.cardShape.toShapeBorder();
+    final lainBorder = const Color(0xFF4A6B6B).withValues(alpha: 0.7);
+    final filledButtonStyle = style == ThemeStyle.matrix
+        ? FilledButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: const Color(0xFF00FF41),
+            side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+            shape: style.outlinedButtonShape,
+          )
+        : style == ThemeStyle.lain
+            ? FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF16121F),
+                foregroundColor: const Color(0xFFB1A8C2),
+                side: BorderSide(color: lainBorder, width: 1),
+                shape: style.outlinedButtonShape,
+              )
+            : FilledButton.styleFrom(shape: style.outlinedButtonShape);
 
     var theme = ThemeData(
       brightness: brightness,
@@ -112,39 +134,47 @@ class _OnionChatAppState extends State<OnionChatApp>
         elevation: 0,
         clipBehavior: Clip.antiAlias,
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: style == ThemeStyle.matrix
-            ? FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                foregroundColor: const Color(0xFF00FF41),
-                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
-                shape: style.outlinedButtonShape,
-              )
-            : FilledButton.styleFrom(shape: style.outlinedButtonShape),
-      ),
+      filledButtonTheme: FilledButtonThemeData(style: filledButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: style == ThemeStyle.matrix
+        style: style == ThemeStyle.matrix || style == ThemeStyle.lain
             ? OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF00FF41),
-                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+                foregroundColor: style == ThemeStyle.matrix
+                    ? const Color(0xFF00FF41)
+                    : const Color(0xFFB1A8C2),
+                side: BorderSide(
+                  color: style == ThemeStyle.matrix
+                      ? const Color(0xFF00FF41)
+                      : lainBorder,
+                  width: 1.2,
+                ),
                 shape: style.outlinedButtonShape,
               )
             : OutlinedButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: style == ThemeStyle.matrix
+        style: style == ThemeStyle.matrix || style == ThemeStyle.lain
             ? ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
-                foregroundColor: const Color(0xFF00FF41),
+                foregroundColor: style == ThemeStyle.matrix
+                    ? const Color(0xFF00FF41)
+                    : const Color(0xFFB1A8C2),
                 elevation: 0,
-                side: const BorderSide(color: Color(0xFF00FF41), width: 1.2),
+                side: BorderSide(
+                  color: style == ThemeStyle.matrix
+                      ? const Color(0xFF00FF41)
+                      : lainBorder,
+                  width: 1.2,
+                ),
                 shape: style.outlinedButtonShape,
               )
             : ElevatedButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: style != ThemeStyle.matrix,
-        fillColor: style == ThemeStyle.matrix ? Colors.transparent : null,
+        filled: !(style == ThemeStyle.matrix || style == ThemeStyle.lain),
+        fillColor:
+            style == ThemeStyle.matrix || style == ThemeStyle.lain
+                ? Colors.transparent
+                : null,
         border: _inputBorder(style, width: 1.2),
         enabledBorder: _inputBorder(style, width: 1.2),
         focusedBorder: _inputBorder(style, width: 1.8),
@@ -181,6 +211,15 @@ class _OnionChatAppState extends State<OnionChatApp>
         borderSide: BorderSide(color: const Color(0xFF00FF41), width: width),
       );
     }
+    if (style == ThemeStyle.lain) {
+      return OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(
+          color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+          width: width,
+        ),
+      );
+    }
     return OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none);
   }
 
@@ -194,9 +233,10 @@ class _OnionChatAppState extends State<OnionChatApp>
         return MaterialApp(
           title: 'OnionChat',
           debugShowCheckedModeBanner: false,
+          navigatorKey: _navKey,
           theme: _theme(seed, Brightness.light),
           darkTheme: _theme(seed, Brightness.dark),
-          themeMode: tc.themeMode,
+          themeMode: ThemeMode.dark,
           home: const SplashScreen(),
           // Click sound only on interactive taps (buttons/tiles) — never on
           // scrolling or background taps.

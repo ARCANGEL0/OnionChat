@@ -943,25 +943,29 @@ class _PreviewFramePainter extends CustomPainter {
     final neon = switch (style) {
       ThemeStyle.matrix => const Color(0xFF00FF41),
       ThemeStyle.bladerunner => const Color(0xFFFFB347),
-      ThemeStyle.lain => const Color(0xFF00FFFF),
+      ThemeStyle.lain => const Color(0xFF4A6B6B),
       _ => null,
     };
     if (neon != null) {
+      final isLain = style == ThemeStyle.lain;
       canvas.drawPath(
         path,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = selected ? 3 : 1.3
-          ..color = neon.withValues(alpha: selected ? 0.95 : 0.6),
+          ..strokeWidth = isLain
+              ? (selected ? 1.5 : 0.8)
+              : (selected ? 3 : 1.3)
+          ..color = neon.withValues(alpha: selected ? (isLain ? 0.8 : 0.95) : 0.5),
       );
       if (selected) {
         canvas.drawPath(
           path,
           Paint()
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 10
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7)
-            ..color = neon.withValues(alpha: 0.45),
+            ..strokeWidth = isLain ? 5 : 10
+            ..maskFilter =
+                MaskFilter.blur(BlurStyle.normal, isLain ? 3.5 : 7)
+            ..color = neon.withValues(alpha: isLain ? 0.18 : 0.45),
         );
       }
     } else if (selected) {
@@ -982,7 +986,8 @@ class _PreviewFramePainter extends CustomPainter {
       canvas.save();
       canvas.clipPath(path);
       final paint = Paint()
-        ..color = (style.glowColor ?? primary).withValues(alpha: 0.16);
+        ..color = (style.glowColor ?? primary)
+            .withValues(alpha: style == ThemeStyle.lain ? 0.07 : 0.16);
       for (var i = 0; i < tears; i++) {
         canvas.drawRect(
           Rect.fromLTWH(

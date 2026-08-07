@@ -716,9 +716,12 @@ class _ChatScreenState extends State<ChatScreen> {
                                     itemCount: c.messages.length,
                                     itemBuilder: (context, i) {
                                       final msg = c.messages[i];
+                                      final isLain = ChatTheme.of(context)
+                                              .style ==
+                                          ThemeStyle.lain;
                                       return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 3,
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: isLain ? 8 : 3,
                                         ),
                                         child: MessageBubble(
                                           message: msg,
@@ -1122,9 +1125,8 @@ class _InputBar extends StatelessWidget {
     final tc = ThemeController.instance;
     final s = tc.settings;
     final style = ChatTheme.of(context).style;
+    final isLain = style == ThemeStyle.lain;
     final chatFont = s.chatFont.trim().isEmpty ? null : s.chatFont;
-    // Defaults are purple-tinted so the footer matches the app theme instead
-    // of plain grey; each can be overridden in Theme → Message area.
     final barColor = s.inputBar != null
         ? Color(s.inputBar!)
         : Color.alphaBlend(
@@ -1147,17 +1149,16 @@ class _InputBar extends StatelessWidget {
         Color.lerp(buttonColor, Colors.black, 0.18) ?? buttonColor,
       ],
     );
-    // The whole message area in one container. Textarea has no fill on purpose.
     return ShapeBox(
       shape: style.inputShape,
       color: barColor,
       borderColor: style == ThemeStyle.matrix
           ? const Color(0xFF00FF41)
           : edge != null
-              ? edge.withValues(alpha: 0.4)
+              ? edge.withValues(alpha: isLain ? 0.22 : 0.4)
               : null,
       borderWidth: style.borderWidth,
-      glowColor: glow,
+      glowColor: isLain ? null : glow,
       glowBlur: style.glowBlur,
       shadow: const BoxShadow(
         color: Colors.black38,
@@ -1176,7 +1177,6 @@ class _InputBar extends StatelessWidget {
             style: IconButton.styleFrom(shape: style.outlinedButtonShape),
           ),
           const SizedBox(width: 2),
-          // Sticker button
           IconButton(
             onPressed: sending || !enabled ? null : onStickers,
             icon: const Icon(Icons.emoji_emotions_outlined),
@@ -1186,7 +1186,6 @@ class _InputBar extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           Expanded(
-            // Text sits a hair low in the bar; lift it a couple px.
             child: Transform.translate(
               offset: const Offset(0, -5.5),
               child: TextField(
@@ -1223,41 +1222,63 @@ class _InputBar extends StatelessWidget {
           AnimatedScale(
             scale: canSend ? 1 : 0.85,
             duration: const Duration(milliseconds: 150),
-            child: Transform.translate(
-              offset: const Offset(0, -2.5),
-              child: ShapeBox(
-                shape: style.buttonShape,
-                color: style == ThemeStyle.matrix ? Colors.transparent : null,
-                gradient: style == ThemeStyle.matrix ? null : sendGradient,
-                borderColor: style == ThemeStyle.matrix
-                    ? const Color(0xFF00FF41).withValues(alpha: 0.9)
-                    : edge != null
-                        ? edge.withValues(alpha: 0.6)
-                        : null,
-                borderWidth: style.borderWidth,
-                glowColor: style == ThemeStyle.matrix
-                    ? const Color(0xFF00FF41)
-                    : style.glowColor ?? buttonColor.withValues(alpha: 0.35),
-                glowBlur: style.glowBlur > 0 ? style.glowBlur : 10,
-                child: InkWell(
-                  customBorder: style.outlinedButtonShape,
-                  onTap: canSend && !sending ? onSend : null,
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Icon(
-                      Icons.send_rounded,
-                      size: 20,
+            child: isLain
+                ? IconButton(
+                    onPressed: canSend && !sending ? onSend : null,
+                    icon: const Icon(Icons.arrow_upward_rounded, size: 24),
+                    color: Color.lerp(
+                      buttonColor,
+                      const Color(0xFF9A9A9A),
+                      0.35,
+                    ),
+                    tooltip: 'Send',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                  )
+                : Transform.translate(
+                    offset: const Offset(0, -2.5),
+                    child: ShapeBox(
+                      shape: style.buttonShape,
                       color: style == ThemeStyle.matrix
-                          ? const Color(0xFF00FF41).withValues(
-                              alpha: canSend ? 1 : 0.5,
-                            )
-                          : Colors.white.withValues(alpha: canSend ? 1 : 0.6),
+                          ? Colors.transparent
+                          : null,
+                      gradient:
+                          style == ThemeStyle.matrix ? null : sendGradient,
+                      borderColor: style == ThemeStyle.matrix
+                          ? const Color(0xFF00FF41).withValues(alpha: 0.9)
+                          : edge != null
+                              ? edge.withValues(alpha: 0.6)
+                              : null,
+                      borderWidth: style.borderWidth,
+                      glowColor: style == ThemeStyle.matrix
+                          ? const Color(0xFF00FF41)
+                          : style.glowColor ??
+                              buttonColor.withValues(alpha: 0.35),
+                      glowBlur: style.glowBlur > 0 ? style.glowBlur : 10,
+                      child: InkWell(
+                        customBorder: style.outlinedButtonShape,
+                        onTap: canSend && !sending ? onSend : null,
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: Icon(
+                            Icons.send_rounded,
+                            size: 20,
+                            color: style == ThemeStyle.matrix
+                                ? const Color(0xFF00FF41).withValues(
+                                    alpha: canSend ? 1 : 0.5,
+                                  )
+                                : Colors.white.withValues(
+                                    alpha: canSend ? 1 : 0.6,
+                                  ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
           ),
         ],
       ),

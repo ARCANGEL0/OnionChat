@@ -135,7 +135,9 @@ class _OnionChatAppState extends State<OnionChatApp>
         clipBehavior: Clip.antiAlias,
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: style.panelColor ?? scheme.surfaceContainer,
+        color: ThemeController.instance.menuSettingsBackground ??
+            style.panelColor ??
+            scheme.surfaceContainer,
       ),
       filledButtonTheme: FilledButtonThemeData(style: filledButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(

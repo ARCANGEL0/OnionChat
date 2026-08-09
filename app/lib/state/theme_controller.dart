@@ -23,6 +23,43 @@ class ThemeController extends ChangeNotifier {
   /// The primary/button color (accent).
   Color get accentColor => Color(settings.accentColor);
 
+  /// The optional user-set card surface color (`null` = theme default).
+  Color? get cardColor =>
+      settings.cardColor != null ? Color(settings.cardColor!) : null;
+
+  /// Progress card ("Connecting…") bg image value (wallpaper format).
+  String? get cardWallpaper => settings.cardWallpaper;
+  String get cardFont => settings.cardFont;
+  double get cardFontSize => settings.cardFontSize;
+  Color? get cardText =>
+      settings.cardText != null ? Color(settings.cardText!) : null;
+
+  /// Popup menu (⋮) overrides.
+  Color? get menuSettingsBackground => settings.menuSettingsBackground != null
+      ? Color(settings.menuSettingsBackground!)
+      : null;
+  String? get menuSettingsWallpaper => settings.menuSettingsWallpaper;
+  Color? get menuSettingsText =>
+      settings.menuSettingsText != null ? Color(settings.menuSettingsText!) : null;
+  String get menuSettingsFont => settings.menuSettingsFont;
+  double get menuSettingsFontSize => settings.menuSettingsFontSize;
+
+  /// Kick card / profile card background image values.
+  String? get kickWallpaper => settings.kickWallpaper;
+  String? get profileWallpaper => settings.profileWallpaper;
+
+  /// "Disconnected" card (shown after being dropped from a room) overrides.
+  Color? get disconnectedBackground =>
+      settings.disconnectedBackground != null
+          ? Color(settings.disconnectedBackground!)
+          : null;
+  Color? get disconnectedText => settings.disconnectedText != null
+      ? Color(settings.disconnectedText!)
+      : null;
+  String? get disconnectedWallpaper => settings.disconnectedWallpaper;
+  String get disconnectedFont => settings.disconnectedFont;
+  double get disconnectedFontSize => settings.disconnectedFontSize;
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_settingsKey);
@@ -210,8 +247,20 @@ class ThemeController extends ChangeNotifier {
     s.kickButton = color?.toARGB32();
   case ColorSetting.kickButtonText:
     s.kickButtonText = color?.toARGB32();
-  case ColorSetting.kickCancel:
-    s.kickCancel = color?.toARGB32();
+case ColorSetting.kickCancel:
+        s.kickCancel = color?.toARGB32();
+      case ColorSetting.disconnectedBackground:
+        s.disconnectedBackground = color?.toARGB32();
+      case ColorSetting.disconnectedText:
+        s.disconnectedText = color?.toARGB32();
+      case ColorSetting.card:
+        s.cardColor = color?.toARGB32();
+      case ColorSetting.cardText:
+        s.cardText = color?.toARGB32();
+      case ColorSetting.menuSettingsBackground:
+        s.menuSettingsBackground = color?.toARGB32();
+      case ColorSetting.menuSettingsText:
+        s.menuSettingsText = color?.toARGB32();
   }
   settings = s;
   await _save();
@@ -392,6 +441,87 @@ class ThemeController extends ChangeNotifier {
     await _save();
   }
 
+  Future<void> setCardWallpaper(String? wallpaper) async {
+    settings = settings.copy()..cardWallpaper = wallpaper;
+    await _save();
+  }
+
+  Future<void> setCardFont(String font) async {
+    settings = settings.copy()..cardFont = font;
+    await _save();
+  }
+
+  Future<void> setCardFontSize(double size) async {
+    settings = settings.copy()..cardFontSize = size;
+    await _save();
+  }
+
+  Future<void> setCardTextColor(Color? color) async {
+    settings = settings.copy()..cardText = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setMenuSettingsBackground(Color? color) async {
+    settings = settings.copy()..menuSettingsBackground = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setMenuSettingsWallpaper(String? wallpaper) async {
+    settings = settings.copy()..menuSettingsWallpaper = wallpaper;
+    await _save();
+  }
+
+  Future<void> setMenuSettingsText(Color? color) async {
+    settings = settings.copy()..menuSettingsText = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setMenuSettingsFont(String font) async {
+    settings = settings.copy()..menuSettingsFont = font;
+    await _save();
+  }
+
+  Future<void> setMenuSettingsFontSize(double size) async {
+    settings = settings.copy()..menuSettingsFontSize = size;
+    await _save();
+  }
+
+  Future<void> setKickWallpaper(String? wallpaper) async {
+    settings = settings.copy()..kickWallpaper = wallpaper;
+    await _save();
+  }
+
+  Future<void> setProfileWallpaper(String? wallpaper) async {
+    settings = settings.copy()..profileWallpaper = wallpaper;
+    await _save();
+  }
+
+  Future<void> setDisconnectedBackground(Color? color) async {
+    settings =
+        settings.copy()..disconnectedBackground = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setDisconnectedText(Color? color) async {
+    settings = settings.copy()..disconnectedText = color?.toARGB32();
+    await _save();
+  }
+
+  Future<void> setDisconnectedWallpaper(String? wallpaper) async {
+    settings = settings.copy()..disconnectedWallpaper = wallpaper;
+    await _save();
+  }
+
+  Future<void> setDisconnectedFont(String font) async {
+    settings = settings.copy()..disconnectedFont = font;
+    await _save();
+  }
+
+  Future<void> setDisconnectedFontSize(double size) async {
+    settings = settings.copy()..disconnectedFontSize = size;
+    await _save();
+  }
+
   Future<void> setTorPorts({int? socks, int? control}) async {
     final s = settings.copy();
     if (socks != null) s.socksPort = socks;
@@ -481,6 +611,19 @@ class ThemeController extends ChangeNotifier {
       s.kickFontSize = map['kickFontSize'] is num
           ? (map['kickFontSize'] as num).toDouble()
           : 15.0;
+      s.cardColor = _intOrNull(map['cardColor']);
+      s.cardWallpaper = map['cardWallpaper'] as String?;
+      s.cardText = _intOrNull(map['cardText']);
+      s.menuSettingsBackground = _intOrNull(map['menuSettingsBackground']);
+      s.menuSettingsWallpaper = map['menuSettingsWallpaper'] as String?;
+      s.menuSettingsText = _intOrNull(map['menuSettingsText']);
+      s.disconnectedBackground = _intOrNull(map['disconnectedBackground']);
+      s.disconnectedText = _intOrNull(map['disconnectedText']);
+      s.disconnectedWallpaper = map['disconnectedWallpaper'] as String?;
+      s.disconnectedFont = map['disconnectedFont'] as String? ?? '';
+      s.disconnectedFontSize = map['disconnectedFontSize'] is num
+          ? (map['disconnectedFontSize'] as num).toDouble()
+          : 15.0;
       settings = s;
       await _save();
       return null;
@@ -564,6 +707,12 @@ enum ColorSetting {
   kickButton,
   kickButtonText,
   kickCancel,
+  disconnectedBackground,
+  disconnectedText,
+  card,
+  cardText,
+  menuSettingsBackground,
+  menuSettingsText,
 }
 
 /// Returns a readable foreground color for use on top of [background].

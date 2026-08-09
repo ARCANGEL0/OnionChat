@@ -18,7 +18,7 @@ import '../widgets/persona_editor.dart';
 import '../widgets/app_toast.dart';
 import '../screens/chat_screen.dart';
 import '../services/chat_client.dart';
-import '../services/tor_engine.dart';
+import '../widgets/tor_log_view.dart';
 import '../widgets/tor_progress_card.dart';
 
 class CreateRoomScreen extends StatefulWidget {
@@ -286,6 +286,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final body = _creating ? _buildProgress() : _buildForm(scheme);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Room'),
@@ -302,9 +303,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: _creating ? _buildProgress() : _buildForm(scheme),
-      ),
+      body: SafeArea(child: body),
     );
   }
 
@@ -319,7 +318,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             subtitle: _stage,
           ),
           const SizedBox(height: 16),
-          _AppLogView(),
+          const TorLogView(),
         ],
       ),
     ).animate().fadeIn(duration: 300.ms);
@@ -466,53 +465,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _AppLogView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ValueListenableBuilder<String>(
-      valueListenable: TorEngine.instance.lastLogNotifier,
-      builder: (context, lastLog, _) {
-        if (lastLog.isEmpty) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'App Log',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                lastLog
-                    .replaceFirst(RegExp(r'^.*?\[notice\]\s*'), '')
-                    .trim(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: scheme.onSurfaceVariant,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

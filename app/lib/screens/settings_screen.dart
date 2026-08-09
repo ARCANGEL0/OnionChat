@@ -14,6 +14,7 @@ import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/profile_avatar.dart';
+import '../widgets/themed_dialog.dart';
 import 'avatar_picker_screen.dart';
 import 'splash_screen.dart';
 import 'theme_screen.dart';
@@ -202,30 +203,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // --------------------------------------------------------------- wipe-all
 
   Future<void> _eraseAll() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-        title: const Text('Erase all data?'),
-        content: const Text(
-          'Your own messages are deleted on every room you joined or hosted. '
+      title: 'Erase all data?',
+      message: 'Your own messages are deleted on every room you joined or hosted. '
           'Then this device wipes every saved room, message history, profile '
           'picture, custom wallpaper and all settings. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Erase everything'),
-          ),
-        ],
-      ),
+      action: 'Erase everything',
     );
     if (confirmed != true || !mounted) return;
 

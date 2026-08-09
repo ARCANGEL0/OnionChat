@@ -6,9 +6,11 @@ import '../services/image_pick.dart';
 import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/persona_editor.dart';
-import '../widgets/app_toast.dart';
+import '../widgets/themed_dialog.dart';
 import 'wallpaper_picker_screen.dart';
 
 /// Per-chat settings: the persona (display name, picture, bio) used in THIS
@@ -111,24 +113,11 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
     required String message,
     required String action,
   }) {
-    return showDialog<bool>(
+    return showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(action),
-          ),
-        ],
-      ),
+      title: title,
+      message: message,
+      action: action,
     );
   }
 
@@ -175,32 +164,16 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 
   Future<void> _editPassword() async {
     final controller = TextEditingController(text: widget.room.password ?? '');
-    final scheme = Theme.of(context).colorScheme;
-    final result = await showDialog<String>(
+    final result = await showThemedTextInput(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Change room password'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: 'Password (leave empty to remove)',
-            hintText: widget.room.password == null
-                ? 'No password currently'
-                : 'Current password: ${widget.room.password}',
-            prefixIcon: const Icon(Icons.lock),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      title: 'Change room password',
+      controller: controller,
+      label: 'Password (leave empty to remove)',
+      hint: widget.room.password == null
+          ? 'No password currently'
+          : 'Current password: ${widget.room.password}',
+      icon: Icons.lock,
+      action: 'Save',
     );
     if (result == null || !mounted) return;
     widget.room.password = result.isEmpty ? null : result;
@@ -262,7 +235,10 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHigh
+                        color: (ThemeStyle.fromId(
+                                    ThemeController.instance.settings.themeStyle)
+                                    .panelColor ??
+                                scheme.surfaceContainerHigh)
                             .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(16),
                       ),

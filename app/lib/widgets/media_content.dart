@@ -8,6 +8,8 @@ import 'package:video_player/video_player.dart';
 
 import '../models/chat_message.dart';
 import '../state/room_controller.dart';
+import '../state/theme_controller.dart';
+import '../themes/theme_style.dart';
 import 'media_viewer.dart';
 
 /// Renders a shared photo/video inside a message bubble. Bytes are fetched
@@ -323,7 +325,10 @@ class _MediaPlaceholder extends StatelessWidget {
         width: 180,
         height: 90,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: ThemeStyle.fromId(
+                          ThemeController.instance.settings.themeStyle)
+                      .panelColor ??
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../services/tor_engine.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/themed_dialog.dart';
 
 /// Shows the Tor daemon's log from the current run, live-updated.
 class TorLogScreen extends StatefulWidget {
@@ -43,26 +44,13 @@ class _TorLogScreenState extends State<TorLogScreen> {
   }
 
   Future<void> _restartTor() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Restart Tor?'),
-        content: const Text(
-          'This will stop and restart the Tor daemon. '
+      title: 'Restart Tor?',
+      message: 'This will stop and restart the Tor daemon. '
           'All active connections will be temporarily interrupted. '
           'Hosted rooms will come back automatically; joined rooms will reconnect.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
+      action: 'Restart',
     );
     if (confirmed != true || !mounted) return;
 

@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../models/app_settings.dart';
+import '../services/wallpaper_lib.dart';
 import '../state/theme_controller.dart';
 import '../themes/theme_style.dart';
 import '../themes/theme_template.dart';
 import '../themes/theme_templates.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/lain_window.dart';
+import '../widgets/themed_dialog.dart';
 import 'wallpaper_picker_screen.dart';
 
 /// Full appearance editor: import/export theme JSON, a color field for every
@@ -76,6 +79,16 @@ class ThemeScreen extends StatelessWidget {
           'Logo',
           'Tint applied over the app logo',
           ColorSetting.logo,
+        ),
+        _ColorFieldSpec(
+          'Menu background',
+          'The ⋮ popup menu background',
+          ColorSetting.menuSettingsBackground,
+        ),
+        _ColorFieldSpec(
+          'Menu text',
+          'Text on the ⋮ popup menu',
+          ColorSetting.menuSettingsText,
         ),
       ],
     ),
@@ -159,44 +172,7 @@ class ThemeScreen extends StatelessWidget {
         ),
       ],
     ),
-    (
-      'Kick card',
-      [
-        _ColorFieldSpec(
-          'Kick background',
-          'The kick confirmation card',
-          ColorSetting.kickBackground,
-        ),
-        _ColorFieldSpec('Kick border', 'Card outline', ColorSetting.kickBorder),
-        _ColorFieldSpec(
-          'Kick title',
-          '"Kick <name>?" heading',
-          ColorSetting.kickTitle,
-        ),
-        _ColorFieldSpec(
-          'Kick body text',
-          'The explanation text',
-          ColorSetting.kickBody,
-        ),
-        _ColorFieldSpec('Kick icon', 'The warning icon', ColorSetting.kickIcon),
-        _ColorFieldSpec(
-          'Kick button',
-          'The Kick action button',
-          ColorSetting.kickButton,
-        ),
-        _ColorFieldSpec(
-          'Kick button text',
-          'Label on the Kick button',
-          ColorSetting.kickButtonText,
-        ),
-        _ColorFieldSpec(
-          'Cancel button',
-          'Cancel label on the card',
-          ColorSetting.kickCancel,
-        ),
-      ],
-    ),
-    (
+(
       'Text colors',
       [
         _ColorFieldSpec(
@@ -258,31 +234,6 @@ class ThemeScreen extends StatelessWidget {
           'Message area background',
           'The footer behind the text field',
           ColorSetting.inputBar,
-        ),
-      ],
-    ),
-    (
-      'Profile card',
-      [
-        _ColorFieldSpec(
-          'Profile background',
-          'The profile card background',
-          ColorSetting.profileBackground,
-        ),
-        _ColorFieldSpec(
-          'Profile text',
-          'Username on the profile card',
-          ColorSetting.profileText,
-        ),
-        _ColorFieldSpec(
-          'Profile muted text',
-          'Bio and joined time',
-          ColorSetting.profileSecondaryText,
-        ),
-        _ColorFieldSpec(
-          'Profile accent',
-          'Avatar ring and profile icons',
-          ColorSetting.profileAccent,
         ),
       ],
     ),
@@ -390,9 +341,156 @@ class ThemeScreen extends StatelessWidget {
                     label: f.label,
                     description: f.description,
                     color: _currentColor(s, f.setting),
+                    inactive: _isBubbleInactive(
+                      s.themeStyle,
+                      f.setting,
+                    ),
                     onTap: () => _editColor(context, f.setting),
                   ),
               ],
+              const SizedBox(height: 24),
+              const _SectionTitle('Cards'),
+              const SizedBox(height: 4),
+              Text(
+                'Each card\'s background (color or image), font color, size '
+                'and style.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 4),
+              _cardBlock(
+                context,
+                title: 'Kick card',
+                background: const [
+                  (
+                    'Background',
+                    'Color or image on the kick card',
+                    ColorSetting.kickBackground,
+                  ),
+                  (
+                    'Border',
+                    'The card outline',
+                    ColorSetting.kickBorder,
+                  ),
+                ],
+                fontColor: (
+                  'Font color',
+                  '"Kick <name>?" heading and text',
+                  ColorSetting.kickTitle,
+                ),
+                extraColors: const [
+                  (
+                    'Body text',
+                    'The explanation text',
+                    ColorSetting.kickBody,
+                  ),
+                  ('Icon', 'The warning icon', ColorSetting.kickIcon),
+                  (
+                    'Button',
+                    'The Kick action button',
+                    ColorSetting.kickButton,
+                  ),
+                  (
+                    'Button text',
+                    'Label on the Kick button',
+                    ColorSetting.kickButtonText,
+                  ),
+                  (
+                    'Cancel',
+                    'Cancel label on the card',
+                    ColorSetting.kickCancel,
+                  ),
+                ],
+                font: s.kickFont,
+                fontSize: s.kickFontSize,
+                onFontChanged: tc.setKickFont,
+                onFontSizeChanged: tc.setKickFontSize,
+                sizeMin: 12,
+                sizeMax: 20,
+              ),
+              const SizedBox(height: 8),
+              _cardBlock(
+                context,
+                title: 'Disconnected card',
+                background: const [
+                  (
+                    'Color',
+                    'Background of the "Disconnected" notice',
+                    ColorSetting.disconnectedBackground,
+                  ),
+                ],
+                fontColor: (
+                  'Font color',
+                  'Text on the Disconnected notice',
+                  ColorSetting.disconnectedText,
+                ),
+                font: s.disconnectedFont,
+                fontSize: s.disconnectedFontSize,
+                onFontChanged: tc.setDisconnectedFont,
+                onFontSizeChanged: tc.setDisconnectedFontSize,
+                sizeMin: 12,
+                sizeMax: 20,
+              ),
+              const SizedBox(height: 8),
+              _cardBlock(
+                context,
+                title: 'Profile card',
+                background: const [
+                  (
+                    'Color',
+                    'Color or image on the profile card',
+                    ColorSetting.profileBackground,
+                  ),
+                ],
+                fontColor: (
+                  'Font color',
+                  'Username on the profile card',
+                  ColorSetting.profileText,
+                ),
+                extraColors: const [
+                  (
+                    'Muted text',
+                    'Bio and joined time',
+                    ColorSetting.profileSecondaryText,
+                  ),
+                  (
+                    'Accent',
+                    'Avatar ring and profile icons',
+                    ColorSetting.profileAccent,
+                  ),
+                ],
+                font: s.profileFont,
+                fontSize: s.profileFontSize,
+                onFontChanged: tc.setProfileFont,
+                onFontSizeChanged: tc.setProfileFontSize,
+                sizeMin: 12,
+                sizeMax: 24,
+              ),
+              const SizedBox(height: 8),
+              _cardBlock(
+                context,
+                title: 'Progress cards (Connecting / Creating)',
+                background: const [
+                  (
+                    'Color',
+                    'Background of the connecting / creating cards',
+                    ColorSetting.card,
+                  ),
+                ],
+                fontColor: (
+                  'Font color',
+                  'Text on the connecting / creating cards',
+                  ColorSetting.cardText,
+                ),
+                font: s.cardFont,
+                fontSize: s.cardFontSize,
+                onFontChanged: tc.setCardFont,
+                onFontSizeChanged: tc.setCardFontSize,
+                sizeMin: 12,
+                sizeMax: 22,
+              ),
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
@@ -401,39 +499,6 @@ class ThemeScreen extends StatelessWidget {
                   icon: const Icon(Icons.restart_alt),
                   label: const Text('Reset to defaults'),
                 ),
-              ),
-              const SizedBox(height: 28),
-              const _SectionTitle('Backgrounds'),
-              const SizedBox(height: 4),
-              Text(
-                'Each area can be a plain color or an image (built-in '
-                'wallpaper or your own photo).',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 6),
-              _BackgroundRow(
-                label: 'Main page background',
-                current: s.mainWallpaper,
-                pickerTitle: 'Main page background',
-                defaultColor: s.background ?? s.accentColor,
-                onChanged: tc.setMainWallpaper,
-              ),
-              _BackgroundRow(
-                label: 'Chat background',
-                current: s.globalWallpaper,
-                pickerTitle: 'Chat wallpaper',
-                defaultColor: s.chatBackground ?? s.accentColor,
-                onChanged: tc.setGlobalWallpaper,
-              ),
-              _BackgroundRow(
-                label: 'Member list background',
-                current: s.membersWallpaper,
-                pickerTitle: 'Member list background',
-                defaultColor: s.membersBackground ?? s.accentColor,
-                onChanged: tc.setMembersWallpaper,
               ),
               const SizedBox(height: 28),
               const _SectionTitle('Fonts'),
@@ -583,21 +648,6 @@ class ThemeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _FontRow(
-                label: 'Profile font',
-                subtitle: 'Profile card text',
-                current: s.profileFont,
-                onChanged: tc.setProfileFont,
-              ),
-              const SizedBox(height: 4),
-              _SizeRow(
-                label: 'Profile text size',
-                value: s.profileFontSize,
-                min: 12,
-                max: 24,
-                onChanged: tc.setProfileFontSize,
-              ),
-              const SizedBox(height: 12),
-              _FontRow(
                 label: 'Notification font',
                 subtitle: 'System tips in the chat',
                 current: s.noticeFont,
@@ -626,20 +676,19 @@ class ThemeScreen extends StatelessWidget {
                 max: 18,
                 onChanged: tc.setToastFontSize,
               ),
-              const SizedBox(height: 12),
               _FontRow(
-                label: 'Kick card font',
-                subtitle: 'Kick confirmation card',
-                current: s.kickFont,
-                onChanged: tc.setKickFont,
+                label: 'Menu font',
+                subtitle: 'The ⋮ popup menu',
+                current: s.menuSettingsFont,
+                onChanged: tc.setMenuSettingsFont,
               ),
               const SizedBox(height: 4),
               _SizeRow(
-                label: 'Kick card text size',
-                value: s.kickFontSize,
-                min: 12,
+                label: 'Menu text size',
+                value: s.menuSettingsFontSize,
+                min: 11,
                 max: 20,
-                onChanged: tc.setKickFontSize,
+                onChanged: tc.setMenuSettingsFontSize,
               ),
             ],
           );
@@ -740,25 +789,236 @@ class ThemeScreen extends StatelessWidget {
         return s.kickButtonText;
       case ColorSetting.kickCancel:
         return s.kickCancel;
+      case ColorSetting.card:
+        return s.cardColor;
+      case ColorSetting.cardText:
+        return s.cardText;
+      case ColorSetting.disconnectedBackground:
+        return s.disconnectedBackground;
+      case ColorSetting.disconnectedText:
+        return s.disconnectedText;
+      case ColorSetting.menuSettingsBackground:
+        return s.menuSettingsBackground;
+      case ColorSetting.menuSettingsText:
+        return s.menuSettingsText;
     }
   }
 
-  Future<void> _editColor(BuildContext context, ColorSetting setting) async {
+  /// True when the field is unusable in the current theme template (e.g. the
+  /// Matrix and Lain themes draw their messages without side bubbles).
+  static bool _isBubbleInactive(String? themeId, ColorSetting setting) {
+    if (setting != ColorSetting.bubbleMine &&
+        setting != ColorSetting.bubbleTheirs) {
+      return false;
+    }
+    final style = ThemeStyle.fromId(themeId);
+    return style == ThemeStyle.matrix || style == ThemeStyle.lain;
+  }
+
+  Future<void> _editColor(
+    BuildContext context,
+    ColorSetting setting, {
+    String? label,
+  }) async {
     final tc = ThemeController.instance;
     final current = _currentColor(tc.settings, setting);
+    final wallpaper = _wallpaperTarget(tc, setting);
     final picked = await showDialog<Object?>(
       context: context,
       builder: (_) => _ColorDialog(
-        title: _colorGroups
-            .expand((g) => g.$2)
-            .firstWhere((f) => f.setting == setting)
-            .label,
+        title: label ??
+            _colorGroups
+                .expand((g) => g.$2)
+                .firstWhere((f) => f.setting == setting)
+                .label,
         initial: current != null ? Color(current) : null,
         palette: _palette,
+        wallpaper: wallpaper,
       ),
     );
     if (picked == _canceled) return;
+    if (picked == _pickedImage) {
+      await _pickBackgroundImage(context, wallpaper!);
+      return;
+    }
+    if (picked == null) {
+      // "Use default": fall back to the theme's default — clear any custom
+      // image AND reset the color.
+      if (wallpaper != null) await wallpaper.onChanged(null);
+      await tc.setColor(setting, null);
+      return;
+    }
     await tc.setColor(setting, picked as Color?);
+  }
+
+  /// For colors that are also backgrounds (main page, chat, member list,
+  /// progress card, menu, kick card, profile card) this returns the metadata
+  /// needed to let the user assign an image instead of a plain color.
+  _WallpaperTarget? _wallpaperTarget(ThemeController tc, ColorSetting setting) {
+    final s = tc.settings;
+    switch (setting) {
+      case ColorSetting.background:
+        return _WallpaperTarget(
+          current: s.mainWallpaper,
+          pickerTitle: 'Main page background',
+          defaultColor: s.background ?? s.accentColor,
+          onChanged: tc.setMainWallpaper,
+        );
+      case ColorSetting.chatBackground:
+        return _WallpaperTarget(
+          current: s.globalWallpaper,
+          pickerTitle: 'Chat background',
+          defaultColor: s.chatBackground ?? s.accentColor,
+          onChanged: tc.setGlobalWallpaper,
+        );
+      case ColorSetting.membersBackground:
+        return _WallpaperTarget(
+          current: s.membersWallpaper,
+          pickerTitle: 'Member list background',
+          defaultColor: s.membersBackground ?? s.accentColor,
+          onChanged: tc.setMembersWallpaper,
+        );
+      case ColorSetting.card:
+        return _WallpaperTarget(
+          current: s.cardWallpaper,
+          pickerTitle: 'Progress card background',
+          defaultColor: s.cardColor ?? s.accentColor,
+          onChanged: tc.setCardWallpaper,
+        );
+      case ColorSetting.menuSettingsBackground:
+        return _WallpaperTarget(
+          current: s.menuSettingsWallpaper,
+          pickerTitle: 'Menu background',
+          defaultColor: s.menuSettingsBackground ?? s.accentColor,
+          onChanged: tc.setMenuSettingsWallpaper,
+        );
+      case ColorSetting.kickBackground:
+        return _WallpaperTarget(
+          current: s.kickWallpaper,
+          pickerTitle: 'Kick card background',
+          defaultColor: s.kickBackground ?? s.accentColor,
+          onChanged: tc.setKickWallpaper,
+        );
+      case ColorSetting.profileBackground:
+        return _WallpaperTarget(
+          current: s.profileWallpaper,
+          pickerTitle: 'Profile card background',
+          defaultColor: s.profileBackground ?? s.accentColor,
+          onChanged: tc.setProfileWallpaper,
+        );
+      case ColorSetting.disconnectedBackground:
+        return _WallpaperTarget(
+          current: s.disconnectedWallpaper,
+          pickerTitle: 'Disconnected card background',
+          defaultColor: s.disconnectedBackground ?? s.accentColor,
+          onChanged: tc.setDisconnectedWallpaper,
+        );
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _pickBackgroundImage(
+    BuildContext context,
+    _WallpaperTarget target,
+  ) async {
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => WallpaperPickerScreen(
+          current: target.current,
+          title: target.pickerTitle,
+          defaultColor: target.defaultColor,
+        ),
+      ),
+    );
+    if (result == null) return; // canceled
+    await target.onChanged(
+      result == WallpaperPickerScreen.kDefault ? null : result,
+    );
+  }
+
+  /// Renders one card's settings block: a couple of background color/image
+  /// fields, a font color field, and font size + style rows.
+  Widget _cardBlock(
+    BuildContext context, {
+    required String title,
+    required List<(String, String, ColorSetting)> background,
+    required (String, String, ColorSetting) fontColor,
+    List<(String, String, ColorSetting)> extraColors = const [],
+    required String font,
+    required double fontSize,
+    required ValueChanged<String> onFontChanged,
+    required ValueChanged<double> onFontSizeChanged,
+    required double sizeMin,
+    required double sizeMax,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final s = ThemeController.instance.settings;
+    final style = ThemeStyle.fromId(s.themeStyle);
+    final panel =
+        ThemeController.instance.cardColor ??
+        style.panelColor ??
+        scheme.surfaceContainerHigh;
+    return Card(
+      elevation: 0,
+      color: panel,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            for (final c in background)
+              _ColorField(
+                label: c.$1,
+                description: c.$2,
+                color: _currentColor(s, c.$3),
+                onTap: () => _editColor(context, c.$3, label: c.$1),
+              ),
+            _ColorField(
+              label: fontColor.$1,
+              description: fontColor.$2,
+              color: _currentColor(s, fontColor.$3),
+              onTap: () =>
+                  _editColor(context, fontColor.$3, label: fontColor.$1),
+            ),
+            for (final c in extraColors)
+              _ColorField(
+                label: c.$1,
+                description: c.$2,
+                color: _currentColor(s, c.$3),
+                onTap: () => _editColor(context, c.$3, label: c.$1),
+              ),
+            _SizeRow(
+              label: 'Font size',
+              value: fontSize,
+              min: sizeMin,
+              max: sizeMax,
+              onChanged: onFontSizeChanged,
+            ),
+            const SizedBox(height: 4),
+            _FontRow(
+              label: 'Font style',
+              subtitle: title,
+              current: font,
+              onChanged: onFontChanged,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _exportTheme(BuildContext context) async {
@@ -815,30 +1075,19 @@ class ThemeScreen extends StatelessWidget {
   }
 
   Future<void> _confirmReset(BuildContext context, ThemeController tc) async {
-    final ok = await showDialog<bool>(
+    final ok = await showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reset appearance?'),
-        content: const Text(
-          'This restores every default color, wallpaper and profile picture.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
+      title: 'Reset appearance?',
+      message: 'This restores every default color, wallpaper and profile picture.',
+      action: 'Reset',
     );
     if (ok == true) await tc.resetAppearance();
   }
 }
 
-const _canceled = Object();
+final _canceled = Object();
+/// Sent from the color dialog when the user taps "Pick image".
+final _pickedImage = Object();
 
 /// A preview thumbnail for one theme template. Tapping applies the
 /// template's colors and shape style.
@@ -1018,15 +1267,33 @@ class _ColorFieldSpec {
   const _ColorFieldSpec(this.label, this.description, this.setting);
 }
 
+/// Metadata used by the color dialog so a background color field can also
+/// assign an image (built-in wallpaper or an uploaded photo) instead.
+class _WallpaperTarget {
+  final String? current;
+  final String pickerTitle;
+  final int? defaultColor;
+  final Future<void> Function(String?) onChanged;
+
+  const _WallpaperTarget({
+    required this.current,
+    required this.pickerTitle,
+    required this.defaultColor,
+    required this.onChanged,
+  });
+}
+
 class _ColorDialog extends StatefulWidget {
   final String title;
   final Color? initial;
   final List<Color> palette;
+  final _WallpaperTarget? wallpaper;
 
   const _ColorDialog({
     required this.title,
     required this.initial,
     required this.palette,
+    this.wallpaper,
   });
 
   @override
@@ -1044,60 +1311,296 @@ class _ColorDialogState extends State<_ColorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (final c in widget.palette)
-                  _Swatch(
-                    color: c,
-                    selected: _color?.toARGB32() == c.toARGB32(),
-                    onTap: () => setState(() => _color = c),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            ColorPicker(
-              pickerColor: _color ?? Theme.of(context).colorScheme.primary,
-              onColorChanged: (c) => setState(() => _color = c),
-              enableAlpha: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.circle, color: _color, size: 26),
-                const SizedBox(width: 8),
-                Text(
-                  _color != null
-                      ? '#${(_color!.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}'
-                      : 'Theme default',
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final isLain = ThemeStyle.fromId(s.themeStyle) == ThemeStyle.lain;
+    final cardFont = s.cardFont.trim().isEmpty ? null : s.cardFont;
+    final cardSize = s.cardFontSize;
+    final cardTextColor = tc.cardText ?? Theme.of(context).colorScheme.onSurface;
+    final cardSubColor =
+        (tc.cardText ?? Theme.of(context).colorScheme.onSurfaceVariant)
+            .withValues(alpha: 0.8);
+
+    final content = SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final c in widget.palette)
+                _Swatch(
+                  color: c,
+                  selected: _color?.toARGB32() == c.toARGB32(),
+                  onTap: () => setState(() => _color = c),
                 ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 18),
+          ColorPicker(
+            pickerColor: _color ?? Theme.of(context).colorScheme.primary,
+            onColorChanged: (c) => setState(() => _color = c),
+            enableAlpha: false,
+            labelTextStyle: TextStyle(
+              color: cardSubColor,
+              fontSize: cardSize * 0.85,
+              fontFamily: cardFont,
             ),
-          ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.circle, color: _color, size: 26),
+              const SizedBox(width: 8),
+              Text(
+                _color != null
+                    ? '#${(_color!.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}'
+                    : 'Theme default',
+                style: TextStyle(
+                  color: cardTextColor,
+                  fontFamily: cardFont,
+                  fontSize: cardSize,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: isLain
+          ? _LainWindow(
+              title: widget.title,
+              font: cardFont,
+              child: content,
+              actions: _actions(context, lain: true),
+            )
+          : _CardColorWindow(
+              background: s.cardWallpaper,
+              bgColor: tc.cardColor,
+              textColor: cardTextColor,
+              subColor: cardSubColor,
+              font: cardFont,
+              size: cardSize,
+              title: widget.title,
+              child: content,
+              actions: _actions(context, lain: false),
+            ),
+    );
+  }
+
+  List<Widget> _actions(BuildContext context, {required bool lain}) {
+    final tc = ThemeController.instance;
+    final cyan = tc.cardColor ?? const Color(0xFF4A6B6B);
+    final accent = cyan;
+    final font = tc.settings.cardFont.trim().isEmpty
+        ? null
+        : tc.settings.cardFont;
+
+    Widget action({
+      required VoidCallback onPressed,
+      required String label,
+      bool bold = false,
+      bool filled = false,
+    }) {
+      if (!lain) {
+        return filled
+            ? FilledButton(onPressed: onPressed, child: Text(label))
+            : TextButton(onPressed: onPressed, child: Text(label));
+      }
+      final onAccent = onColor(filled ? accent : cyan);
+      return InkWell(
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: filled ? accent : null,
+            border: Border.all(color: cyan),
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: filled ? onAccent : cyan,
+              fontFamily: font,
+              fontWeight: bold ? FontWeight.w700 : null,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return [
+      action(
+        onPressed: () => Navigator.pop(context, _canceled),
+        label: 'Cancel',
+      ),
+      if (widget.wallpaper != null)
+        action(
+          onPressed: () => Navigator.pop(context, _pickedImage),
+          label: 'Pick image',
+        ),
+      action(
+        onPressed: () => Navigator.pop(context, null),
+        label: 'Use default',
+      ),
+      action(
+        onPressed: () => Navigator.pop(context, _color ?? _canceled),
+        label: 'Use',
+        bold: true,
+        filled: true,
+      ),
+    ];
+  }
+}
+
+/// The color picker rendered as a Lain "system window" (chrome bar + dark
+/// body), mirroring the progress-card windows.
+class _LainWindow extends StatelessWidget {
+  final String title;
+  final String? font;
+  final Widget child;
+  final List<Widget> actions;
+
+  const _LainWindow({
+    required this.title,
+    required this.font,
+    required this.child,
+    required this.actions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 400,
+      child: LainWindow(
+        title: title,
+        font: font,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              child,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  for (final action in actions) ...[
+                    action,
+                    if (action != actions.last) const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, _canceled),
-          child: const Text('Cancel'),
+    );
+  }
+}
+
+/// The color picker dialog styled like a "general card": card color or
+/// wallpaper background, card text color, font and size.
+class _CardColorWindow extends StatelessWidget {
+  final String? background;
+  final Color? bgColor;
+  final Color textColor;
+  final Color subColor;
+  final String? font;
+  final double size;
+  final String title;
+  final Widget child;
+  final List<Widget> actions;
+
+  const _CardColorWindow({
+    required this.title,
+    required this.background,
+    required this.bgColor,
+    required this.textColor,
+    required this.subColor,
+    required this.font,
+    required this.size,
+    required this.child,
+    required this.actions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final style = ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final bg =
+        bgColor ??
+        ThemeController.instance.cardColor ??
+        style.panelColor ??
+        scheme.surfaceContainerHigh;
+    return Material(
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, null),
-          child: const Text('Use default'),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (background != null)
+                Wallpaper(background!).background(context)
+              else
+                ColoredBox(color: bg),
+              SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w800,
+                            fontSize: size + 2,
+                            fontFamily: font,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        DefaultTextStyle(
+                          style: TextStyle(
+                            color: textColor,
+                            fontFamily: font,
+                            fontSize: size,
+                          ),
+                          child: child,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: actions,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, _color ?? _canceled),
-          child: const Text('Use'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1145,18 +1648,21 @@ class _ColorField extends StatelessWidget {
   final String description;
   final int? color;
   final VoidCallback onTap;
+  final bool inactive;
 
   const _ColorField({
     required this.label,
     required this.description,
     required this.color,
     required this.onTap,
+    this.inactive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return ListTile(
+      enabled: !inactive,
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: Container(
         width: 34,
@@ -1164,16 +1670,36 @@ class _ColorField extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: color != null ? Color(color!) : Colors.transparent,
-          border: Border.all(color: scheme.outlineVariant, width: 2),
+          border: Border.all(
+            color: inactive ? scheme.outlineVariant : scheme.outline,
+            width: 2,
+          ),
         ),
         child: color == null
-            ? Icon(Icons.auto_awesome, size: 16, color: scheme.onSurfaceVariant)
+            ? Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              )
             : null,
       ),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(description),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+      title: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        inactive ? 'Inactive in current theme' : description,
+        style: TextStyle(
+          fontSize: 12,
+          color: inactive ? scheme.outline : null,
+          fontStyle: inactive ? FontStyle.italic : null,
+        ),
+      ),
+      trailing: Icon(
+        inactive ? Icons.block : Icons.chevron_right,
+        color: inactive ? scheme.outline : null,
+      ),
+      onTap: inactive ? null : onTap,
     );
   }
 }
@@ -1181,58 +1707,6 @@ class _ColorField extends StatelessWidget {
 /// A "color or image" row for one background (main page, chat, member list).
 /// Opens [WallpaperPickerScreen]; picking the Default tile clears the image so
 /// the area falls back to its color field.
-class _BackgroundRow extends StatelessWidget {
-  final String label;
-  final String? current;
-  final String pickerTitle;
-  final int? defaultColor;
-  final ValueChanged<String?> onChanged;
-
-  const _BackgroundRow({
-    required this.label,
-    required this.current,
-    required this.pickerTitle,
-    this.defaultColor,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    String subtitle;
-    if (current == null) {
-      subtitle = 'Default color';
-    } else if (current!.startsWith('asset:')) {
-      subtitle = 'Built-in wallpaper';
-    } else {
-      subtitle = 'Custom image';
-    }
-    return Card(
-      elevation: 0,
-      color: scheme.surfaceContainerHigh,
-      child: ListTile(
-        leading: const Icon(Icons.wallpaper),
-        title: Text(label),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () async {
-          final result = await Navigator.of(context).push<String>(
-            MaterialPageRoute(
-              builder: (_) => WallpaperPickerScreen(
-                current: current,
-                title: pickerTitle,
-                defaultColor: defaultColor,
-              ),
-            ),
-          );
-          if (result == null) return; // canceled
-          onChanged(result == WallpaperPickerScreen.kDefault ? null : result);
-        },
-      ),
-    );
-  }
-}
-
 class _SectionTitle extends StatelessWidget {
   final String text;
 
@@ -1279,9 +1753,14 @@ class _FontRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style = ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final panel =
+        ThemeController.instance.cardColor ??
+        style.panelColor ??
+        scheme.surfaceContainerHigh;
     return Card(
       elevation: 0,
-      color: scheme.surfaceContainerHigh,
+      color: panel,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         child: Row(

@@ -8,8 +8,8 @@ import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../themes/theme_style.dart';
 import '../widgets/persona_editor.dart';
+import '../widgets/tor_log_view.dart';
 import '../widgets/tor_progress_card.dart';
-import '../services/tor_engine.dart';
 import '../services/chat_client.dart';
 import 'chat_screen.dart';
 
@@ -256,12 +256,13 @@ class _ConnectScreenState extends State<ConnectScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final body = _connecting ? _buildProgress() : _buildForm(scheme);
     return Scaffold(
       appBar: AppBar(title: const Text('Connect')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
-          child: _connecting ? _buildProgress() : _buildForm(scheme),
+          child: body,
         ),
       ),
     );
@@ -278,7 +279,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
             subtitle: _stage,
           ),
           const SizedBox(height: 16),
-          _AppLogView(),
+          const TorLogView(),
         ],
       ),
     ).animate().fadeIn(duration: 300.ms);
@@ -445,53 +446,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AppLogView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ValueListenableBuilder<String>(
-      valueListenable: TorEngine.instance.lastLogNotifier,
-      builder: (context, lastLog, _) {
-        if (lastLog.isEmpty) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'App Log',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                lastLog
-                    .replaceFirst(RegExp(r'^.*?\[notice\]\s*'), '')
-                    .trim(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: scheme.onSurfaceVariant,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

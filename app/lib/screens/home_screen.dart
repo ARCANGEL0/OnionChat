@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../models/app_settings.dart';
 import '../models/room.dart';
 import '../services/room_store.dart';
 import '../services/wallpaper_lib.dart';
@@ -13,6 +14,8 @@ import '../themes/theme_style.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/empty_states.dart';
+import '../widgets/lain_window.dart';
+import '../widgets/shape_box.dart';
 import 'chat_screen.dart';
 import 'connect_screen.dart';
 import 'create_room_screen.dart';
@@ -75,16 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (msg == null || !mounted) return;
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.cloud_off),
-        title: const Text('Disconnected'),
-        content: Text(msg),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: _DisconnectedCard(message: msg),
       ),
     );
   }
@@ -103,29 +99,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
-          PopupMenuButton<String>(
+          _SettingsMenuButton(
             onSelected: (v) {
               if (v == 'settings') _open(const SettingsScreen());
               if (v == 'theme') _open(const ThemeScreen());
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'settings',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.settings_outlined),
-                  title: Text('Settings'),
-                ),
-              ),
-              PopupMenuItem(
-                value: 'theme',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.palette_outlined),
-                  title: Text('Theme'),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -567,12 +545,22 @@ class _LainWindow extends StatelessWidget {
   Widget build(BuildContext context) {
     final mainFont = ThemeController.instance.settings.mainFont.trim();
     final font = mainFont.isEmpty ? null : mainFont;
+    final card = ThemeController.instance.cardColor;
+    final barColor = card ?? const Color(0xFF1A1430);
+    final bodyColor = card != null
+        ? Color.lerp(card, Colors.black, 0.7)!
+        : const Color(0xFF120E1E);
+    final borderColor = card ?? const Color(0xFF4A6B6B);
+    final dotColor = card != null
+        ? onColor(card)
+        : const Color(0xFFFF2A6D).withValues(alpha: 0.7);
+    final chromeText = card != null ? onColor(card) : const Color(0xFF7A708A);
     return Container(
       width: 216,
       decoration: BoxDecoration(
-        color: const Color(0xFF120E1E),
+        color: bodyColor,
         border: Border.all(
-          color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+          color: borderColor.withValues(alpha: 0.7),
           width: 1,
         ),
         boxShadow: const [
@@ -589,20 +577,20 @@ class _LainWindow extends StatelessWidget {
         children: [
           Container(
             height: 28,
-            color: const Color(0xFF1A1430),
+            color: barColor,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
               children: [
                 Container(
                   width: 6,
                   height: 6,
-                  color: const Color(0xFFFF2A6D).withValues(alpha: 0.7),
+                  color: dotColor,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'WIRED://',
                   style: TextStyle(
-                    color: const Color(0xFF7A708A),
+                    color: chromeText,
                     fontSize: 12,
                     fontFamily: font,
                     letterSpacing: 2,
@@ -612,7 +600,7 @@ class _LainWindow extends StatelessWidget {
                 Text(
                   '[-]',
                   style: TextStyle(
-                    color: const Color(0xFF7A708A),
+                    color: chromeText,
                     fontSize: 11,
                     fontFamily: font,
                   ),
@@ -774,6 +762,610 @@ class _SpeedItem extends StatelessWidget {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The ⋮ overflow menu: a custom popup so its background can be a plain color
+/// or a wallpaper image (the built-in PopupMenuButton can't paint images).
+/// Honors the Menu color, image, text color, font family and size.
+class _SettingsMenuButton extends StatefulWidget {
+  final ValueChanged<String> onSelected;
+
+  const _SettingsMenuButton({required this.onSelected});
+
+  @override
+  State<_SettingsMenuButton> createState() => _SettingsMenuButtonState();
+}
+
+class _SettingsMenuButtonState extends State<_SettingsMenuButton> {
+  final GlobalKey _key = GlobalKey();
+
+  static const _menuItems = <(String, IconData, String)>[
+    ('settings', Icons.settings_outlined, 'Settings'),
+    ('theme', Icons.palette_outlined, 'Theme'),
+  ];
+
+  Future<void> _open() async {
+    final theme = Theme.of(context);
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final bgColor =
+        tc.menuSettingsBackground ?? theme.colorScheme.surfaceContainer;
+    final textColor = tc.menuSettingsText ?? theme.colorScheme.onSurface;
+    final font = s.menuSettingsFont.trim().isEmpty ? null : s.menuSettingsFont;
+    final size = s.menuSettingsFontSize;
+    final width = 200.0;
+
+    final box = _key.currentContext?.findRenderObject() as RenderBox?;
+    final pos = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    final anchor = RelativeRect.fromLTRB(
+      pos.dx - width + (box?.size.width ?? 48),
+      pos.dy + (box?.size.height ?? 48),
+      0,
+      0,
+    );
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close menu',
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration.zero,
+      pageBuilder: (ctx, _, _) => _SettingsMenuOverlay(
+        anchor: anchor,
+        width: width,
+        style: ThemeStyle.fromId(s.themeStyle),
+        background: tc.menuSettingsWallpaper,
+        bgColor: bgColor,
+        textStyle: TextStyle(
+          color: textColor,
+          fontFamily: font,
+          fontSize: size,
+        ),
+        items: _menuItems,
+        onSelected: (v) {
+          Navigator.of(ctx).pop();
+          widget.onSelected(v);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = ThemeController.instance;
+    final textColor =
+        tc.menuSettingsText ?? Theme.of(context).colorScheme.onSurfaceVariant;
+    return IconButton(
+      key: _key,
+      onPressed: _open,
+      icon: Icon(
+        Icons.more_vert,
+        color: textColor,
+        size: tc.settings.menuSettingsFontSize > 0
+            ? tc.settings.menuSettingsFontSize * 1.4
+            : null,
+      ),
+      tooltip: 'Settings and theme',
+    );
+  }
+}
+
+class _SettingsMenuOverlay extends StatelessWidget {
+  final RelativeRect anchor;
+  final double width;
+  final ThemeStyle style;
+  final String? background;
+  final Color bgColor;
+  final TextStyle textStyle;
+  final List<(String, IconData, String)> items;
+  final ValueChanged<String> onSelected;
+
+  const _SettingsMenuOverlay({
+    required this.anchor,
+    required this.width,
+    required this.style,
+    required this.background,
+    required this.bgColor,
+    required this.textStyle,
+    required this.items,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final left = anchor.left.clamp(8.0, screenSize.width - width - 8);
+    final top = anchor.top;
+    final child = switch (style) {
+      ThemeStyle.lain => _buildLain(context),
+      ThemeStyle.matrix => _buildMatrix(context),
+      ThemeStyle.cyberpunk => _buildCyberpunk(context),
+      ThemeStyle.bladerunner => _buildBladerunner(context),
+      _ => _buildDefault(context),
+    };
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned(
+            left: left,
+            top: top,
+            child: Material(
+              type: MaterialType.transparency,
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(
+    BuildContext context,
+    (String, IconData, String) item,
+    EdgeInsets padding,
+    Color? hover, [
+    Widget Function(BuildContext, Color, IconData)? iconBuilder,
+  ]) {
+    final color = textStyle.color;
+    return InkWell(
+      onTap: () => onSelected(item.$1),
+      child: Container(
+        color: hover,
+        child: Padding(
+          padding: padding,
+          child: SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                if (iconBuilder != null)
+                  iconBuilder(context, color ?? Colors.white, item.$2)
+                else ...[
+                  Icon(item.$2, size: 20, color: color),
+                  const SizedBox(width: 12),
+                ],
+                Text(
+                  item.$3,
+                  style: textStyle.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefault(BuildContext context) {
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(14),
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: background != null
+                    ? Wallpaper(background).background(context)
+                    : ColoredBox(color: bgColor),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final item in items)
+                    _row(context, item, const EdgeInsets.symmetric(horizontal: 14, vertical: 12), null),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLain(BuildContext context) {
+    final menuBg = ThemeController.instance.menuSettingsBackground;
+    final barColor = menuBg ?? const Color(0xFF1A1430);
+    final accent = menuBg ?? const Color(0xFF4A6B6B);
+    final dotColor =
+        menuBg != null ? onColor(menuBg) : const Color(0xFFFF2A6D).withValues(alpha: 0.7);
+    final chromeText = menuBg != null ? onColor(menuBg) : const Color(0xFF7A708A);
+    final bodyColor = menuBg != null
+        ? Color.lerp(menuBg, Colors.black, 0.7)!
+        : const Color(0xFF120E1E);
+    return Container(
+      width: width,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.fromBorderSide(
+          BorderSide(color: accent.withValues(alpha: 0.45), width: 1),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x73000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: background != null
+                ? Wallpaper(background).background(context)
+                : ColoredBox(color: bodyColor),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                height: 26,
+                color: barColor,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    Container(width: 6, height: 6, color: dotColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'WIRED://SYSTEM',
+                        style: TextStyle(
+                          color: chromeText,
+                          fontSize: 11,
+                          letterSpacing: 2,
+                          fontFamily: textStyle.fontFamily,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '[-]',
+                      style: TextStyle(
+                        color: chromeText,
+                        fontSize: 10,
+                        fontFamily: textStyle.fontFamily,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              for (final item in items)
+                _row(
+                  context,
+                  item,
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  const Color(0x0DFFFFFF),
+                  (c, color, icon) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(icon, size: 14, color: accent),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatrix(BuildContext context) {
+    final green = const Color(0xFF00FF41);
+    return Container(
+      width: width,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.all(color: green, width: 1.2),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: background != null
+                ? Wallpaper(background).background(context)
+                : const ColoredBox(color: Color(0xFF0A0F0A)),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 7, 10, 4),
+                child: Text(
+                  '> SYS://MENU',
+                  style: TextStyle(
+                    color: green,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              for (final item in items)
+                _row(context, item, const EdgeInsets.fromLTRB(10, 9, 10, 9), null),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCyberpunk(BuildContext context) {
+    final cyan = const Color(0xFF00F0FF);
+    final yellow = const Color(0xFFFCE300);
+    return Container(
+      width: width,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.fromBorderSide(
+          BorderSide(color: cyan.withValues(alpha: 0.7), width: 1.6),
+        ),
+        boxShadow: [BoxShadow(color: cyan.withValues(alpha: 0.35), blurRadius: 22)], 
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: background != null
+                ? Wallpaper(background).background(context)
+                : const ColoredBox(color: Color(0xFF120716)),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 7, 12, 4),
+                child: Row(
+                  children: [
+                    Text('//', style: TextStyle(color: yellow, fontSize: 12, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'SYS://MENU',
+                      style: TextStyle(color: yellow, fontSize: 11, letterSpacing: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+              for (final item in items)
+                _row(
+                  context,
+                  item,
+                  const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  const Color(0x0AFCE300),
+                  (c, color, icon) => Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Icon(icon, size: 18, color: cyan),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBladerunner(BuildContext context) {
+    final amber = const Color(0xFFFFB347);
+    return Container(
+      width: width,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.fromBorderSide(
+          BorderSide(color: amber.withValues(alpha: 0.6), width: 1.2),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: background != null
+                ? Wallpaper(background).background(context)
+                : const ColoredBox(color: Color(0xFF10141A)),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                color: const Color(0xFF1A222C),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                child: Text(
+                  'NEXUS // MENU',
+                  style: TextStyle(color: amber, fontSize: 10, letterSpacing: 2),
+                ),
+              ),
+              for (final item in items)
+                _row(context, item, const EdgeInsets.fromLTRB(12, 10, 12, 10), null),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "Disconnected" notice shown after being dropped from a room. Renders as
+/// a small system window (WIRED://DISCONNECTED) on the Lain theme and as a
+/// themed ShapeBox card otherwise (background color/image + font settings).
+class _DisconnectedCard extends StatelessWidget {
+  final String message;
+
+  const _DisconnectedCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = ThemeController.instance;
+    final s = tc.settings;
+    final style = ThemeStyle.fromId(
+      ThemeController.instance.settings.themeStyle,
+    );
+    if (style == ThemeStyle.lain) {
+      return _buildLain(context, tc);
+    }
+    return _buildPlain(context, tc, s);
+  }
+
+  Widget _buildLain(BuildContext context, ThemeController tc) {
+    final s = tc.settings;
+    final cyan = tc.disconnectedText ?? const Color(0xFF00FF9C);
+    final font = s.disconnectedFont.trim().isEmpty ? null : s.disconnectedFont;
+    return SizedBox(
+      width: 320,
+      child: LainWindow(
+        title: 'DISCONNECTED',
+        font: font,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '> ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: cyan,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                        color: const Color(0xFFE7F7FF),
+                        shadows: const [
+                          Shadow(color: Color(0x6600FF9C), blurRadius: 6),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerRight,
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cyan,
+                      border: Border.all(color: cyan),
+                    ),
+                    child: Text(
+                      'OK',
+                      style: TextStyle(
+                        color: onColor(cyan),
+                        fontFamily: font,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlain(
+    BuildContext context,
+    ThemeController tc,
+    AppSettings s,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final style = ChatTheme.of(context).style;
+    final bg =
+        tc.disconnectedBackground ??
+        tc.cardColor ??
+        style.panelColor ??
+        scheme.surfaceContainerHigh;
+    final textColor = tc.disconnectedText ?? scheme.onSurface;
+    final subColor = (tc.disconnectedText ?? scheme.onSurfaceVariant)
+        .withValues(alpha: 0.8);
+    final font = s.disconnectedFont.trim().isEmpty ? null : s.disconnectedFont;
+    final size = s.disconnectedFontSize;
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_off,
+            size: 40,
+            color: subColor.withValues(alpha: 0.9),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Disconnected',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  fontFamily: font,
+                  fontSize: size + 1,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: subColor,
+                  fontFamily: font,
+                  fontSize: size * 0.95,
+                ),
+          ),
+          const SizedBox(height: 18),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: tc.accentColor,
+              foregroundColor: onColor(tc.accentColor),
+              textStyle: TextStyle(fontFamily: font),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return SizedBox(
+      width: 360,
+      child: ShapeBox(
+        shape: style.cardShape,
+        color: bg,
+        borderColor: style.edgeColor ?? textColor.withValues(alpha: 0.3),
+        borderWidth: style.borderWidth > 0 ? style.borderWidth : 1.5,
+        glowColor: style.glowColor,
+        glowBlur: style.glowBlur,
+        shadow: const BoxShadow(
+          color: Colors.black54,
+          blurRadius: 24,
+          offset: Offset(0, 8),
+        ),
+        child: Stack(
+          children: [
+            if (s.disconnectedWallpaper != null)
+              Positioned.fill(
+                child: Wallpaper(s.disconnectedWallpaper!).background(context),
+              ),
+            content,
           ],
         ),
       ),

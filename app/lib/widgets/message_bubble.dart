@@ -141,6 +141,7 @@ class MessageBubble extends StatelessWidget {
               else
                 Text(
                   message.text,
+                  textAlign: mine ? TextAlign.right : TextAlign.left,
                   style: TextStyle(
                     fontSize: chatFontSize,
                     height: 1.3,
@@ -155,7 +156,8 @@ class MessageBubble extends StatelessWidget {
     );
 
     final row = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          mine ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (!mine) ...[
@@ -173,7 +175,13 @@ class MessageBubble extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Flexible(child: bubble),
+        Flexible(
+          child: Align(
+            alignment:
+                mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: bubble,
+          ),
+        ),
         if (mine) ...[
           const SizedBox(width: 8),
           InkWell(
@@ -190,12 +198,9 @@ class MessageBubble extends StatelessWidget {
       ],
     );
 
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: _hasMenu ? () => _showMenu(context) : null,
-        child: row,
-      ),
+    return GestureDetector(
+      onLongPress: _hasMenu ? () => _showMenu(context) : null,
+      child: row,
     ).animate().fadeIn(duration: 200.ms).slideX(
           begin: mine ? 0.5 : -0.5,
           end: 0,
@@ -395,6 +400,7 @@ class MessageBubble extends StatelessWidget {
         else
           Text(
             message.text,
+            textAlign: mine ? TextAlign.right : TextAlign.left,
             style: TextStyle(
               fontSize: chatFontSize,
               height: 1.35,
@@ -407,7 +413,8 @@ class MessageBubble extends StatelessWidget {
     );
 
     final row = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          mine ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (!mine) ...[
@@ -426,11 +433,15 @@ class MessageBubble extends StatelessWidget {
           const SizedBox(width: 8),
         ],
         Flexible(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
+          child: Align(
+            alignment:
+                mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              child: line,
             ),
-            child: line,
           ),
         ),
         if (mine) ...[
@@ -449,12 +460,9 @@ class MessageBubble extends StatelessWidget {
       ],
     );
 
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: _hasMenu ? () => _showMenu(context) : null,
-        child: row,
-      ),
+    return GestureDetector(
+      onLongPress: _hasMenu ? () => _showMenu(context) : null,
+      child: row,
     ).animate().fadeIn(duration: 200.ms).slideX(
           begin: mine ? 0.5 : -0.5,
           end: 0,

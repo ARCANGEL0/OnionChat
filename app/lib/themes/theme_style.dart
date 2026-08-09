@@ -462,6 +462,14 @@ enum ThemeStyle {
     switch (this) {
       case ThemeStyle.midnight:
         return const Color(0xFF102440);
+      case ThemeStyle.lain:
+        return const Color(0xFF221340);
+      case ThemeStyle.matrix:
+        return const Color(0xFF06230F);
+      case ThemeStyle.cyberpunk:
+        return const Color(0xFF1A1B26);
+      case ThemeStyle.bladerunner:
+        return const Color(0xFF1A1430);
       default:
         return null;
     }

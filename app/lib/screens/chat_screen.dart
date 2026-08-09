@@ -22,9 +22,12 @@ import '../themes/theme_style.dart';
 import '../widgets/chat_picture.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/invite_sheet.dart';
+import '../widgets/lain_window.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/shape_box.dart';
+import '../widgets/themed_dialog.dart';
+import '../widgets/tor_log_view.dart' show TerminalCursor;
 import 'chat_settings_screen.dart';
 import 'image_crop_screen.dart';
 import 'peer_profile_screen.dart';
@@ -265,28 +268,15 @@ class _ChatScreenState extends State<ChatScreen> {
   /// this — it only closes the screen while the room keeps running.
   Future<void> _leave() async {
     final c = RoomController.instance;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(c.isHost ? 'Leave room?' : 'Leave room?'),
-        content: Text(
-          c.isHost
-              ? 'This stops hosting and everyone in the room will be disconnected. '
-                    'Your message history stays saved.'
-              : 'You will leave this chat. The room will be removed from your chat list. '
-                    'To rejoin, you will need the namecode and password, and the host must approve you again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
+      title: 'Leave room?',
+      message: c.isHost
+          ? 'This stops hosting and everyone in the room will be disconnected. '
+                'Your message history stays saved.'
+          : 'You will leave this chat. The room will be removed from your chat list. '
+                'To rejoin, you will need the namecode and password, and the host must approve you again.',
+      action: 'Leave',
     );
     if (confirmed != true || !mounted) return;
 
@@ -509,52 +499,24 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _editMessage(ChatMessage msg) async {
     final controller = TextEditingController(text: msg.text);
-    final result = await showDialog<String>(
+    final result = await showThemedTextInput(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit message'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          minLines: 1,
-          maxLines: 4,
-          decoration: const InputDecoration(hintText: 'Message'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      title: 'Edit message',
+      controller: controller,
+      label: 'Message',
+      icon: Icons.edit_outlined,
+      action: 'Save',
     );
     if (result == null || !mounted) return;
     RoomController.instance.editMessage(msg.id, result);
   }
 
   Future<void> _deleteMessage(ChatMessage msg) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showThemedConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete message?'),
-        content: const Text(
-          'This removes the message for everyone in the room.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete message?',
+      message: 'This removes the message for everyone in the room.',
+      action: 'Delete',
     );
     if (confirmed != true || !mounted) return;
     RoomController.instance.deleteMessage(msg.id);
@@ -918,6 +880,15 @@ class _ConnectionOverlay extends StatelessWidget {
     final tc = ThemeController.instance;
     final style = ChatTheme.of(context).style;
     final accent = Color(tc.settings.accentColor);
+    final cardBg =
+        tc.cardColor ?? style.panelColor ?? scheme.surfaceContainerHigh;
+    final cardTextColor = tc.cardText ?? scheme.onSurface;
+    final cardSubColor = (tc.cardText ?? scheme.onSurfaceVariant)
+        .withValues(alpha: 0.8);
+    final cardFont = tc.settings.cardFont.trim().isEmpty
+        ? null
+        : tc.settings.cardFont;
+    final cardSize = tc.settings.cardFontSize;
 
     // Show chat name if available, otherwise show first part of onion address
     String displayName = roomName;
@@ -928,6 +899,10 @@ class _ConnectionOverlay extends StatelessWidget {
       } else {
         displayName = onionAddress;
       }
+    }
+
+    if (style == ThemeStyle.lain) {
+      return _buildLainConnecting(displayName: displayName);
     }
 
     return GestureDetector(
@@ -947,82 +922,208 @@ class _ConnectionOverlay extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: ShapeBox(
-                      shape: style.cardShape,
-                      color: (style.panelColor ?? scheme.surfaceContainerHigh)
-                          .withValues(alpha: 0.95),
-                      borderColor:
-                          style.edgeColor ?? accent.withValues(alpha: 0.3),
-                      borderWidth: style.borderWidth > 0
-                          ? style.borderWidth
-                          : 1.5,
-                      glowColor: style.glowColor,
-                      glowBlur: style.glowBlur,
-                      shadow: const BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 24,
-                        offset: Offset(0, 8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 40,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Tor icon with pulse animation
-                          _PulsingTorIcon(color: accent),
-                          const SizedBox(height: 24),
-                          // Title
-                          Text(
-                            'Connecting to $displayName',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: scheme.onSurface,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Subtitle
-                          Text(
-                            isHost
-                                ? 'Starting Tor hidden service…'
-                                : 'Establishing secure Tor connection…',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: scheme.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 24),
-                          // Animated progress indicator
-                          SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(accent),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // Status text
-                          Text(
-                            'This may take up to a minute…',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: scheme.onSurfaceVariant.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                ),
-                          ),
-                        ],
-                      ),
+                    shape: style.cardShape,
+                    color: cardBg.withValues(alpha: 0.95),
+                    borderColor:
+                        style.edgeColor ?? accent.withValues(alpha: 0.3),
+                    borderWidth: style.borderWidth > 0
+                        ? style.borderWidth
+                        : 1.5,
+                    glowColor: style.glowColor,
+                    glowBlur: style.glowBlur,
+                    shadow: const BoxShadow(
+                      color: Colors.black54,
+                      blurRadius: 24,
+                      offset: Offset(0, 8),
                     ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (tc.settings.cardWallpaper != null)
+                          Wallpaper(tc.settings.cardWallpaper!)
+                              .background(context),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 40,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Tor icon with pulse animation
+                              _PulsingTorIcon(color: accent),
+                              const SizedBox(height: 24),
+                              // Title
+                              Text(
+                                'Connecting to $displayName',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: cardTextColor,
+                                      fontFamily: cardFont,
+                                      fontSize: cardSize + 2,
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              // Subtitle
+                              Text(
+                                isHost
+                                    ? 'Starting Tor hidden service…'
+                                    : 'Establishing secure Tor connection…',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: cardSubColor,
+                                      fontFamily: cardFont,
+                                      fontSize: cardSize * 0.9,
+                                    ),
+                              ),
+                              const SizedBox(height: 24),
+                              // Animated progress indicator
+                              SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3.5,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(accent),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Status text
+                              Text(
+                                'This may take up to a minute…',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: cardSubColor.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontFamily: cardFont,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   ),
                 ),
               ),
             ],
           ),
         )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack);
+  }
+
+  /// Lain "Connecting to…" card as a compact navi system window (WIRED://
+  /// CONNECTING) instead of a full-height ShapeBox.
+  Widget _buildLainConnecting({
+    required String displayName,
+  }) {
+    final cyan = const Color(0xFF00FF9C);
+    final caption = isHost
+        ? 'starting hidden service…'
+        : 'establishing secure tor connection…';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: const ColoredBox(color: Colors.black87),
+          ),
+          Center(
+            child: SizedBox(
+              width: 300,
+              child: LainWindow(
+                title: 'CONNECTING',
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '> ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: cyan,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              'Connecting to $displayName…',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'monospace',
+                                color: const Color(0xFFE7F7FF),
+                                shadows: const [
+                                  Shadow(
+                                    color: const Color(0x6600FF9C),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          TerminalCursor(cyan: cyan),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 4,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: cyan.withValues(alpha: 0.4),
+                            ),
+                            color: const Color(0xFF100A1A),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: 0.55,
+                            child: ColoredBox(color: cyan),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        caption,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                          color: cyan.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
         .animate()
         .fadeIn(duration: 300.ms)
         .scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack);
@@ -1538,21 +1639,42 @@ class _MembersPanel extends StatelessWidget {
     final c = RoomController.instance;
     final scheme = Theme.of(context).colorScheme;
     final s = ThemeController.instance.settings;
-    final bgColor = s.membersBackground != null
+    final isLain =
+        ThemeStyle.fromId(s.themeStyle) == ThemeStyle.lain;
+    final bgColor = isLain
+        ? const Color(0xFF08080E)
+        : s.membersBackground != null
         ? Color(s.membersBackground!)
         : const Color(0xFFD1BCFD); // rgb(209, 188, 253) — light lavender
-    final textColor = s.membersText != null
+    final cyan = const Color(0xFF00FFFF);
+    final glowText = const TextStyle(
+      shadows: [
+        Shadow(color: Color(0x9900FFFF), blurRadius: 10),
+        Shadow(color: Color(0x5530A0FF), blurRadius: 8),
+      ],
+    );
+    final textColor = isLain
+        ? const Color(0xFFE7F7FF)
+        : s.membersText != null
         ? Color(s.membersText!)
         : onColor(bgColor);
-    final headerColor = s.membersHeader != null
+    final headerColor = isLain
+        ? cyan
+        : s.membersHeader != null
         ? Color(s.membersHeader!)
         : onColor(bgColor); // white-ish on the default dark panel
-    final iconColor = s.membersIcon != null
+    final iconColor = isLain
+        ? cyan
+        : s.membersIcon != null
         ? Color(s.membersIcon!)
         : onColor(bgColor);
-    final dimmed = textColor.withValues(alpha: 0.7);
+    final dimmed = isLain
+        ? const Color(0xFF7FD8E8)
+        : textColor.withValues(alpha: 0.7);
     final onlineSet = c.onlineUsers;
-    final onlineColor = s.onlineText != null
+    final onlineColor = isLain
+        ? const Color(0xFF39FF14)
+        : s.onlineText != null
         ? Color(s.onlineText!)
         : const Color(0xFF39FF14);
     final offlineColor = s.offlineText != null
@@ -1563,7 +1685,9 @@ class _MembersPanel extends StatelessWidget {
 
     final cardShape = ChatTheme.of(context).style.cardShape;
     // Drawer only shapes its left edge; the right is against the screen.
-    final panelShape = cardShape.isBeveled
+    final panelShape = isLain
+        ? const SurfaceShape.rounded(BorderRadius.zero)
+        : cardShape.isBeveled
         ? cardShape
         : SurfaceShape.rounded(
             BorderRadius.only(
@@ -1584,7 +1708,7 @@ class _MembersPanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: headerColor,
-                ),
+                ).merge(isLain ? glowText : const TextStyle()),
               ),
             ],
           ),
@@ -1633,7 +1757,7 @@ class _MembersPanel extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: textColor,
-                            ),
+                            ).merge(isLain ? glowText : const TextStyle()),
                           ),
                         ),
                         if (isHost) ...[
@@ -1653,7 +1777,9 @@ class _MembersPanel extends StatelessWidget {
                             m.bio!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: dimmed),
+style: TextStyle(color: dimmed).merge(
+                              isLain ? glowText : const TextStyle(),
+                            ),
                           ),
                     trailing: canKick
                         ? IconButton(
@@ -1677,6 +1803,25 @@ class _MembersPanel extends StatelessWidget {
         ),
       ],
     );
+
+    if (isLain) {
+      return LainWindow(
+        title: 'MEMBERS',
+        mainAxisSize: MainAxisSize.max,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (hasWallpaper)
+              Wallpaper(s.membersWallpaper).background(context)
+            else
+              const ColoredBox(color: Color(0xFF08080E)),
+            if (hasWallpaper)
+              ColoredBox(color: bgColor.withValues(alpha: 0.9)),
+            content,
+          ],
+        ),
+      );
+    }
 
     return ShapeBox(
       shape: panelShape,

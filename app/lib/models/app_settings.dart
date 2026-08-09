@@ -157,6 +157,54 @@ class AppSettings {
   int socksPort;
   int controlPort;
 
+  /// Optional override for the "card" surfaces: grey progress cards
+  /// ("Connecting…", "Creating room…") and, on the Lain theme, the window
+  /// chrome + accent. `null` = theme default.
+  int? cardColor;
+
+  /// Progress card ("Connecting…", "Creating room…") background image.
+  /// `null` = use [cardColor]; other values follow the wallpaper format.
+  String? cardWallpaper;
+
+  /// Progress card font family ('' = inherit from [mainFont]) and text size.
+  String cardFont;
+  double cardFontSize;
+
+  /// Body text color on the progress card. `null` = theme default.
+  int? cardText;
+
+  /// Optional override for the popup menu background (e.g. the ⋮ menu).
+  /// `null` = theme default.
+  int? menuSettingsBackground;
+
+  /// Popup menu (e.g. the ⋮ menu) image background. `null` = use the
+  /// [menuSettingsBackground] color; other values follow the wallpaper format.
+  String? menuSettingsWallpaper;
+
+  /// Popup menu item text color. `null` = theme default.
+  int? menuSettingsText;
+
+  /// Popup menu font family ('' = inherit from [mainFont]) and item text size.
+  String menuSettingsFont;
+  double menuSettingsFontSize;
+
+  /// Kick confirmation card background image (wallpaper format).
+  String? kickWallpaper;
+
+  /// Profile card background image (wallpaper format).
+  String? profileWallpaper;
+
+  /// "Disconnected" card (shown after being dropped from a room) colors.
+  int? disconnectedBackground; // card background
+  int? disconnectedText; // main text color
+
+  /// "Disconnected" card background image (wallpaper format).
+  String? disconnectedWallpaper;
+
+  /// "Disconnected" card font ('' = inherit from [mainFont]) and text size.
+  String disconnectedFont;
+  double disconnectedFontSize;
+
   /// Notifications & sound preferences.
   bool notificationsEnabled;
   bool notifSound;
@@ -251,6 +299,23 @@ this.mainFont = '',
       this.kickFontSize = 15.0,
       this.socksPort = 9050,
       this.controlPort = 9051,
+      this.cardColor,
+      this.cardWallpaper,
+      this.cardFont = '',
+      this.cardFontSize = 15.0,
+      this.cardText,
+      this.menuSettingsBackground,
+      this.menuSettingsWallpaper,
+      this.menuSettingsText,
+      this.menuSettingsFont = '',
+      this.menuSettingsFontSize = 14.0,
+      this.kickWallpaper,
+      this.profileWallpaper,
+      this.disconnectedBackground,
+      this.disconnectedText,
+      this.disconnectedWallpaper,
+      this.disconnectedFont = '',
+      this.disconnectedFontSize = 15.0,
       this.notificationsEnabled = true,
       this.notifSound = true,
       this.notifVibrate = true,
@@ -324,6 +389,10 @@ this.mainFont = '',
         kickCancel: 0xFFCBB8E8, // light purple Cancel
         kickFont: '',
         kickFontSize: 15.0,
+        disconnectedBackground: 0xFF2A1F4D, // dark purple disconnected card
+        disconnectedText: 0xFFE8DDF4, // light lavender text
+        disconnectedFont: '',
+        disconnectedFontSize: 15.0,
       );
 
   AppSettings copy() => AppSettings(
@@ -408,6 +477,23 @@ this.mainFont = '',
         kickFontSize: kickFontSize,
         socksPort: socksPort,
         controlPort: controlPort,
+        cardColor: cardColor,
+        cardWallpaper: cardWallpaper,
+        cardFont: cardFont,
+        cardFontSize: cardFontSize,
+        cardText: cardText,
+        menuSettingsBackground: menuSettingsBackground,
+        menuSettingsWallpaper: menuSettingsWallpaper,
+        menuSettingsText: menuSettingsText,
+        menuSettingsFont: menuSettingsFont,
+        menuSettingsFontSize: menuSettingsFontSize,
+        kickWallpaper: kickWallpaper,
+        profileWallpaper: profileWallpaper,
+        disconnectedBackground: disconnectedBackground,
+        disconnectedText: disconnectedText,
+        disconnectedWallpaper: disconnectedWallpaper,
+        disconnectedFont: disconnectedFont,
+        disconnectedFontSize: disconnectedFontSize,
         notificationsEnabled: notificationsEnabled,
         notifSound: notifSound,
         notifVibrate: notifVibrate,
@@ -495,8 +581,25 @@ this.mainFont = '',
         'kickButton': kickButton,
         'kickButtonText': kickButtonText,
         'kickCancel': kickCancel,
-        'kickFont': kickFont,
+'kickFont': kickFont,
         'kickFontSize': kickFontSize,
+        'cardColor': cardColor,
+        'cardWallpaper': cardWallpaper,
+        'cardFont': cardFont,
+        'cardFontSize': cardFontSize,
+        'cardText': cardText,
+        'menuSettingsBackground': menuSettingsBackground,
+        'menuSettingsWallpaper': menuSettingsWallpaper,
+        'menuSettingsText': menuSettingsText,
+        'menuSettingsFont': menuSettingsFont,
+        'menuSettingsFontSize': menuSettingsFontSize,
+        'kickWallpaper': kickWallpaper,
+        'profileWallpaper': profileWallpaper,
+        'disconnectedBackground': disconnectedBackground,
+        'disconnectedText': disconnectedText,
+        'disconnectedWallpaper': disconnectedWallpaper,
+        'disconnectedFont': disconnectedFont,
+        'disconnectedFontSize': disconnectedFontSize,
       };
 
   Map<String, dynamic> toJson() => {
@@ -581,6 +684,23 @@ this.mainFont = '',
         'kickFontSize': kickFontSize,
         'socksPort': socksPort,
         'controlPort': controlPort,
+        'cardColor': cardColor,
+        'cardWallpaper': cardWallpaper,
+        'cardFont': cardFont,
+        'cardFontSize': cardFontSize,
+        'cardText': cardText,
+        'menuSettingsBackground': menuSettingsBackground,
+        'menuSettingsWallpaper': menuSettingsWallpaper,
+        'menuSettingsText': menuSettingsText,
+        'menuSettingsFont': menuSettingsFont,
+        'menuSettingsFontSize': menuSettingsFontSize,
+        'kickWallpaper': kickWallpaper,
+        'profileWallpaper': profileWallpaper,
+        'disconnectedBackground': disconnectedBackground,
+        'disconnectedText': disconnectedText,
+        'disconnectedWallpaper': disconnectedWallpaper,
+        'disconnectedFont': disconnectedFont,
+        'disconnectedFontSize': disconnectedFontSize,
         'notificationsEnabled': notificationsEnabled,
         'notifSound': notifSound,
         'notifVibrate': notifVibrate,
@@ -673,6 +793,24 @@ this.mainFont = '',
         kickFontSize: (json['kickFontSize'] as num?)?.toDouble() ?? 15.0,
         socksPort: json['socksPort'] as int? ?? 9050,
         controlPort: json['controlPort'] as int? ?? 9051,
+        cardColor: json['cardColor'] as int?,
+        cardWallpaper: json['cardWallpaper'] as String?,
+        cardFont: json['cardFont'] as String? ?? '',
+        cardFontSize: (json['cardFontSize'] as num?)?.toDouble() ?? 15.0,
+        cardText: json['cardText'] as int?,
+        menuSettingsBackground: json['menuSettingsBackground'] as int?,
+        menuSettingsWallpaper: json['menuSettingsWallpaper'] as String?,
+        menuSettingsText: json['menuSettingsText'] as int?,
+        menuSettingsFont: json['menuSettingsFont'] as String? ?? '',
+        menuSettingsFontSize: (json['menuSettingsFontSize'] as num?)?.toDouble() ?? 14.0,
+        kickWallpaper: json['kickWallpaper'] as String?,
+        profileWallpaper: json['profileWallpaper'] as String?,
+        disconnectedBackground: json['disconnectedBackground'] as int?,
+        disconnectedText: json['disconnectedText'] as int?,
+        disconnectedWallpaper: json['disconnectedWallpaper'] as String?,
+        disconnectedFont: json['disconnectedFont'] as String? ?? '',
+        disconnectedFontSize:
+            (json['disconnectedFontSize'] as num?)?.toDouble() ?? 15.0,
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
         notifSound: json['notifSound'] as bool? ?? true,
         notifVibrate: json['notifVibrate'] as bool? ?? true,

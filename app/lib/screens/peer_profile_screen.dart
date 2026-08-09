@@ -57,10 +57,9 @@ class _PeerProfileScreenState extends State<PeerProfileScreen> {
     final username = widget.username;
     final color = peer?.color ?? 0;
 
-    final bg =
-        s.profileBackground != null
-            ? Color(s.profileBackground!)
-            : const Color(0xFF1A0F2E); // deep dark purple
+    final bg = s.profileBackground != null
+        ? Color(s.profileBackground!)
+        : const Color(0xFF1A0F2E); // deep dark purple
     final textColor = s.profileText != null
         ? Color(s.profileText!)
         : const Color(0xFFFFFFFF);
@@ -73,38 +72,51 @@ class _PeerProfileScreenState extends State<PeerProfileScreen> {
     final profileFont = s.profileFont.trim().isEmpty ? null : s.profileFont;
     final fontSize = s.profileFontSize;
 
-    final style =
-        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final style = ThemeStyle.fromId(
+      ThemeController.instance.settings.themeStyle,
+    );
     final isMatrix = style == ThemeStyle.matrix;
+    final isLain = style == ThemeStyle.lain;
     final matrixBg = const Color(0xFF04120A);
+    final lainEdge = const Color(0xFF4A6B6B);
+    final lainBg = const Color(0xFF120E1E);
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 26),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isMatrix
-              ? [
-                  Color.lerp(matrixBg, const Color(0xFF00FF41), 0.05) ??
-                      matrixBg,
-                  Color.lerp(matrixBg, Colors.black, 0.4) ?? matrixBg,
-                ]
-              : [
-                  Color.lerp(bg, Colors.white, 0.06) ?? bg,
-                  Color.lerp(bg, Colors.black, 0.22) ?? bg,
-                ],
-        ),
-        borderRadius: isMatrix
+        color: isLain ? lainBg : null,
+        gradient: isLain
+            ? null
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isMatrix
+                    ? [
+                        Color.lerp(matrixBg, const Color(0xFF00FF41), 0.05) ??
+                            matrixBg,
+                        Color.lerp(matrixBg, Colors.black, 0.4) ?? matrixBg,
+                      ]
+                    : [
+                        Color.lerp(bg, Colors.white, 0.06) ?? bg,
+                        Color.lerp(bg, Colors.black, 0.22) ?? bg,
+                      ],
+              ),
+        borderRadius: isMatrix || isLain
             ? BorderRadius.zero
             : BorderRadius.circular(14),
         border: Border.all(
           color: isMatrix
               ? const Color(0xFF00FF41).withValues(alpha: 0.35)
+              : isLain
+              ? lainEdge.withValues(alpha: 0.7)
               : accent.withValues(alpha: 0.6),
-          width: 1.5,
+          width: isMatrix
+              ? 1.5
+              : isLain
+              ? 1
+              : 1.5,
         ),
         boxShadow: isMatrix
             ? [
@@ -117,6 +129,14 @@ class _PeerProfileScreenState extends State<PeerProfileScreen> {
                   color: Colors.black54,
                   blurRadius: 24,
                   offset: const Offset(0, 8),
+                ),
+              ]
+            : isLain
+            ? const [
+                BoxShadow(
+                  color: Color(0x73000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 6),
                 ),
               ]
             : [
@@ -142,96 +162,120 @@ class _PeerProfileScreenState extends State<PeerProfileScreen> {
                 opacity: 0.15,
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
-            child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: isMatrix ? BoxShape.rectangle : BoxShape.circle,
-              borderRadius: isMatrix ? BorderRadius.zero : null,
-              border: Border.all(
-                color: isMatrix
-                    ? const Color(0xFF00FF41).withValues(alpha: 0.55)
-                    : accent,
-                width: 2.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isMatrix
-                      ? const Color(0xFF00FF41).withValues(alpha: 0.25)
-                      : accent.withValues(alpha: 0.45),
-                  blurRadius: 18,
-                ),
-              ],
-            ),
-            child: ProfileAvatar(
-              avatar: peer?.avatar,
-              initial: username,
-              size: 92,
-              color: _senderColor(accent, color),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            username,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: profileFont,
-              fontSize: fontSize + 6,
-              fontWeight: FontWeight.w800,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (peer?.bio != null && peer!.bio!.isNotEmpty)
-            Text(
-              peer.bio!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: profileFont,
-                fontSize: fontSize - 1,
-                height: 1.45,
-                color: muted,
-              ),
-            )
-          else
-            Text(
-              'No bio yet.',
-              style: TextStyle(
-                fontFamily: profileFont,
-                fontSize: fontSize - 1,
-                fontStyle: FontStyle.italic,
-                color: muted,
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Container(
-              height: 1,
-              color: accent.withValues(alpha: 0.25),
-            ),
-          ),
-          Row(
+          Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.login, size: 16, color: accent),
-              const SizedBox(width: 6),
-              Text(
-                _joinedLabel(peer),
-                style: TextStyle(
-                  fontFamily: profileFont,
-                  fontSize: fontSize - 2,
-                  color: muted,
+              if (isLain) _LainWindowBar(title: username, font: profileFont),
+              Padding(
+                padding: EdgeInsets.fromLTRB(24, isLain ? 34 : 26, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: isMatrix || isLain
+                            ? BoxShape.rectangle
+                            : BoxShape.circle,
+                        borderRadius: isMatrix
+                            ? BorderRadius.zero
+                            : isLain
+                            ? BorderRadius.circular(18)
+                            : null,
+                        border: Border.all(
+                          color: isMatrix
+                              ? const Color(0xFF00FF41).withValues(alpha: 0.55)
+                              : isLain
+                              ? lainEdge.withValues(alpha: 0.6)
+                              : accent,
+                          width: 2.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isMatrix
+                                ? const Color(
+                                    0xFF00FF41,
+                                  ).withValues(alpha: 0.25)
+                                : isLain
+                                ? lainEdge.withValues(alpha: 0.4)
+                                : accent.withValues(alpha: 0.45),
+                            blurRadius: 18,
+                          ),
+                        ],
+                      ),
+                      child: ProfileAvatar(
+                        avatar: peer?.avatar,
+                        initial: username,
+                        size: 92,
+                        color: _senderColor(accent, color),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      username,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: profileFont,
+                        fontSize: fontSize + 6,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (peer?.bio != null && peer!.bio!.isNotEmpty)
+                      Text(
+                        peer.bio!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: profileFont,
+                          fontSize: fontSize - 1,
+                          height: 1.45,
+                          color: muted,
+                        ),
+                      )
+                    else
+                      Text(
+                        'No bio yet.',
+                        style: TextStyle(
+                          fontFamily: profileFont,
+                          fontSize: fontSize - 1,
+                          fontStyle: FontStyle.italic,
+                          color: muted,
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Container(
+                        height: 1,
+                        color: (isLain ? lainEdge : accent).withValues(
+                          alpha: 0.25,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.login,
+                          size: 16,
+                          color: isLain ? lainEdge : accent,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _joinedLabel(peer),
+                          style: TextStyle(
+                            fontFamily: profileFont,
+                            fontSize: fontSize - 2,
+                            color: muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-            ],
-          ),
-        ),
         ],
       ),
     );
@@ -263,12 +307,66 @@ class _PeerProfileScreenState extends State<PeerProfileScreen> {
   }
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 }
 
-const _glyphs = 'アィウェオカキクケコサシスセソタチツテトナニヌネノ'
+class _LainWindowBar extends StatelessWidget {
+  final String title;
+  final String? font;
+
+  const _LainWindowBar({required this.title, this.font});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 30,
+      color: const Color(0xFF1A1430),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          Container(width: 7, height: 7, color: const Color(0xFFFF2A6D)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'WIRED://$title',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: const Color(0xFF7A708A),
+                fontSize: 12,
+                letterSpacing: 2,
+                fontFamily: font,
+              ),
+            ),
+          ),
+          Text(
+            '[-]',
+            style: TextStyle(
+              color: const Color(0xFF7A708A),
+              fontSize: 11,
+              fontFamily: font,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const _glyphs =
+    'アィウェオカキクケコサシスセソタチツテトナニヌネノ'
     'ハヒフヘホマミムメモヤユヨラリルレロワヲン'
     '0123456789<>=/';
 
@@ -347,8 +445,7 @@ class _MatrixRainPainter extends CustomPainter {
         final swap = ((time * 7 * speed) + row).floor() ^ (col * 131);
         if (((col + row * 3 + swap) % 4) == 0 && t > 0) continue;
         final idx = (col * 31 + row * 17 + swap) % _glyphs.length;
-        final a = opacity *
-            (t == 0 ? 1.0 : ((1.0 - t / trail) * 0.65));
+        final a = opacity * (t == 0 ? 1.0 : ((1.0 - t / trail) * 0.65));
         _glyph(canvas, _glyphs[idx], col * cellSize, y, a);
       }
     }

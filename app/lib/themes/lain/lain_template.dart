@@ -6,7 +6,7 @@ AppSettings lainTemplate() => palette(
       style: ThemeStyle.lain,
       font: 'VT323',
       accentColor: 0xFF7F00FF,
-      logoColor: 0xFF7F00FF,
+      logoColor: 0xFFEA6282,
       background: 0xFF0A0714,
       chatBackground: 0xFF0D0A1E,
       bubbleMine: 0xFF3B0A4E,

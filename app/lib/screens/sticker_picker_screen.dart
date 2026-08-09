@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/sticker.dart';
 import '../../services/sticker_service.dart';
 import '../../state/theme_controller.dart';
+import '../../themes/theme_style.dart';
 
 /// Sticker picker modal - shows available sticker packs with stickers
 class StickerPickerScreen extends StatefulWidget {
@@ -97,7 +98,10 @@ class _StickerPickerScreenState extends State<StickerPickerScreen> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.65,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: ThemeStyle.fromId(
+                        ThemeController.instance.settings.themeStyle)
+                    .panelColor ??
+                scheme.surfaceContainerHigh,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(

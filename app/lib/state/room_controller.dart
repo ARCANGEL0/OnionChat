@@ -344,11 +344,6 @@ class RoomController extends ChangeNotifier {
     s.subs.add(c.onDelete.listen((id) => _onMessageDeleted(s, id)));
     s.subs.add(c.onDeleteAllMedia.listen((_) => _onDeleteAllMedia(s)));
     s.subs.add(c.onDeleteAllMessages.listen((_) => _onDeleteAllMessages(s)));
-    s.subs.add(c.onAuthFailed.listen((_) {
-      s.error = 'Wrong password for this room.';
-      s.connected = false;
-      notifyListeners();
-    }));
     s.subs.add(c.onClose.listen((_) {
       s.connected = false;
       notifyListeners();
@@ -370,7 +365,7 @@ class RoomController extends ChangeNotifier {
     s.subs.add(c.messages.listen((msg) => _onMessage(s, msg)));
 
     try {
-      await c.connect(password: newRoom.password);
+      await c.connect();
     } catch (e) {
       // The session may already be gone (user left while we retried).
       if (_sessions[newRoom.id] != s) return;
@@ -672,18 +667,21 @@ class RoomController extends ChangeNotifier {
   }
 
   Future<void> _persistMessage(Room r, ChatMessage msg) async {
+    if (msg.isSystem) return;
     final store = _store ??= await RoomStore.load();
     await store.addMessage(r.id, msg);
-    if (!msg.isSystem) {
-      r.lastMessage = '${msg.username}: ${_messageLabel(msg)}';
-      r.lastMessageAt = DateTime.now();
-      await store.saveRoom(r);
-    }
+    r.lastMessage = '${msg.username}: ${_messageLabel(msg)}';
+    r.lastMessageAt = DateTime.now();
+    await store.saveRoom(r);
   }
 
   Future<void> _loadHistory(ChatSession s) async {
     final store = _store ??= await RoomStore.load();
-    s.messages.addAll(store.loadMessages(s.room.id));
+    final loaded = store.loadMessages(s.room.id);
+    s.messages.addAll(loaded.where((m) => !m.isSystem));
+    // Remove any stale system messages that were persisted before the fix.
+    await store.replaceMessages(
+        s.room.id, loaded.where((m) => !m.isSystem).toList());
     // Restore the previous session's roster.
     for (final p in store.loadMembers(s.room.id)) {
       s.members[p.username] = p;
@@ -804,26 +802,6 @@ class RoomController extends ChangeNotifier {
         avatar: _effectiveAvatar(r),
         avatarData: _avatarDataFor(_effectiveAvatar(r)),
       );
-    }
-
-    notifyListeners();
-  }
-
-  /// Updates the room's password. If [password] is null or empty, the room
-  /// becomes open (no password required). If the room is currently hosted,
-  /// the new password is applied to the running ChatHost.
-  Future<void> updatePassword(String? password) async {
-    final s = _active;
-    if (s == null) return;
-    final r = s.room;
-    final newPass = password?.trim();
-    r.password = newPass?.isEmpty ?? true ? null : newPass;
-
-    final store = _store ??= await RoomStore.load();
-    await store.saveRoom(r);
-
-    if (s.mode == SessionMode.host) {
-      s.host?.updatePassword(r.password);
     }
 
     notifyListeners();

@@ -9,7 +9,7 @@ import '../themes/theme_style.dart';
 import 'app_toast.dart';
 import 'lain_window.dart';
 
-/// Bottom sheet showing the room's invite details: onion address, optional password, and a scannable QR code.
+/// Bottom sheet showing the room's invite details: onion address and a scannable QR code.
 class InviteSheet extends StatelessWidget {
   final Room room;
 
@@ -17,7 +17,6 @@ class InviteSheet extends StatelessWidget {
 
   String get _qrPayload =>
       'onionchat://join?onion=${Uri.encodeQueryComponent(room.onion)}'
-      '${room.password != null ? '&pass=${Uri.encodeQueryComponent(room.password!)}' : ''}'
       '${room.name.isNotEmpty ? '&name=${Uri.encodeQueryComponent(room.name)}' : ''}';
 
   @override
@@ -54,7 +53,7 @@ class InviteSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Share this onion address and optional password.',
+            'Share this onion address with friends.',
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -79,13 +78,6 @@ class InviteSheet extends StatelessWidget {
                 end: const Offset(1, 1),
                 duration: 400.ms,
                 curve: Curves.easeOutBack),
-          ),
-          const SizedBox(height: 20),
-          _CopyRow(
-            icon: Icons.key,
-            label: 'Password',
-            value: room.password ?? 'No password',
-            monospace: true,
           ),
         ],
       ),
@@ -122,7 +114,7 @@ class _LainInvite extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Share this onion address and optional password.',
+              'Share this onion address with friends.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -155,15 +147,6 @@ class _LainInvite extends StatelessWidget {
               monospace: true,
             ),
             const SizedBox(height: 10),
-            if (room.password != null) ...[
-              _CopyRow(
-                icon: Icons.key,
-                label: 'PASSWORD',
-                value: room.password!,
-                monospace: true,
-              ),
-              const SizedBox(height: 10),
-            ],
             _CopyRow(
               icon: Icons.title,
               label: 'ROOM NAME',

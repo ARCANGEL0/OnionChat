@@ -162,28 +162,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
     _toast('All messages were deleted');
   }
 
-  Future<void> _editPassword() async {
-    final controller = TextEditingController(text: widget.room.password ?? '');
-    final result = await showThemedTextInput(
-      context: context,
-      title: 'Change room password',
-      controller: controller,
-      label: 'Password (leave empty to remove)',
-      hint: widget.room.password == null
-          ? 'No password currently'
-          : 'Current password: ${widget.room.password}',
-      icon: Icons.lock,
-      action: 'Save',
-    );
-    if (result == null || !mounted) return;
-    widget.room.password = result.isEmpty ? null : result;
-    await RoomController.instance.updatePassword(result.isEmpty ? null : result);
-    if (mounted) {
-      setState(() {});
-      _toast(result.isEmpty ? 'Password removed' : 'Password updated');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -291,28 +269,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 if (widget.room.isOwner) ...[
                       const Divider(),
                       const _Header('Room controls'),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                        child: Text(
-                          'These actions apply to everyone in this room.',
-                          style: TextStyle(
-                            color: scheme.onSurfaceVariant,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.lock_outline),
-                        title: const Text('Room password'),
-                        subtitle: Text(
-                          widget.room.password == null
-                              ? 'No password set (anyone with the link can join)'
-                              : 'Password protected',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _editPassword,
-                      ),
-                      const Divider(),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                         child: Text(

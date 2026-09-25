@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../models/app_settings.dart';
 import '../models/room.dart';
+import '../services/app_assets.dart';
 import '../services/room_store.dart';
 import '../services/wallpaper_lib.dart';
 import '../state/chat_theme.dart';
@@ -87,16 +88,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isCyberpunk =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle) ==
+            ThemeStyle.cyberpunk;
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ClipOval(child: AppLogo(size: 26)),
-            const SizedBox(width: 8),
-            const Text('OnionChat'),
-          ],
-        ),
+        title: isCyberpunk
+            ? Image.asset(
+                AppAssets.arasakaWordmark,
+                height: 40,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ClipOval(child: AppLogo(size: 26)),
+                  const SizedBox(width: 8),
+                  const Text('OnionChat'),
+                ],
+              ),
         centerTitle: true,
         actions: [
           _SettingsMenuButton(
@@ -300,6 +311,7 @@ class _ActionMenuState extends State<_ActionMenu> {
 
     if (style == ThemeStyle.matrix) return _buildMatrix();
     if (style == ThemeStyle.lain) return _buildLain();
+    if (style == ThemeStyle.cyberpunk) return _buildCyberpunk();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -377,6 +389,26 @@ class _ActionMenuState extends State<_ActionMenu> {
           const SizedBox(height: 16),
         ],
         _MatrixFab(open: widget.open, onToggle: widget.onToggle),
+      ],
+    );
+  }
+
+  Widget _buildCyberpunk() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (widget.open) ...[
+          _CyberpunkMenuItem(label: 'CREATE ROOM', onTap: widget.onCreate),
+          const SizedBox(height: 10),
+          _CyberpunkMenuItem(
+            label: 'CONNECT',
+            onTap: widget.onConnect,
+            delay: 80,
+          ),
+          const SizedBox(height: 16),
+        ],
+        _CyberpunkFab(open: widget.open, onToggle: widget.onToggle),
       ],
     );
   }
@@ -527,6 +559,145 @@ class _MatrixFab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CyberpunkMenuItem extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final int delay;
+
+  const _CyberpunkMenuItem({
+    required this.label,
+    required this.onTap,
+    this.delay = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const red = Color(0xFFFF3B3B);
+    const cyan = Color(0xFF00F0FF);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: cyan, width: 2)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: red,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .slideX(
+          begin: 0.9,
+          end: 0,
+          duration: 340.ms,
+          delay: delay.ms,
+          curve: Curves.easeOutCubic,
+        )
+        .fadeIn(duration: 220.ms, delay: delay.ms);
+  }
+}
+
+class _CyberpunkFab extends StatefulWidget {
+  final bool open;
+  final VoidCallback onToggle;
+
+  const _CyberpunkFab({required this.open, required this.onToggle});
+
+  @override
+  State<_CyberpunkFab> createState() => _CyberpunkFabState();
+}
+
+class _CyberpunkFabState extends State<_CyberpunkFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _pulse.forward(from: 0);
+    widget.onToggle();
+  }
+
+  static final _shape = SurfaceShape.beveled(
+    const BevelSpec(12, topRight: true, bottomLeft: true),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    const cyan = Color(0xFF00F0FF);
+    const red = Color(0xFFFF3B3B);
+    final color = widget.open ? red : cyan;
+    return GestureDetector(
+      onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 68,
+        height: 68,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _pulse,
+              builder: (context, _) {
+                final t = _pulse.value;
+                return Opacity(
+                  opacity: (1 - t).clamp(0, 1),
+                  child: Transform.scale(
+                    scale: 1 + t * 0.6,
+                    child: SizedBox(
+                      width: 54,
+                      height: 54,
+                      child: ShapeBox(
+                        shape: _shape,
+                        borderColor: cyan,
+                        borderWidth: 1.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            ShapeBox(
+              shape: _shape,
+              color: const Color(0xFF150C10),
+              borderColor: color,
+              borderWidth: 1.6,
+              child: SizedBox(
+                width: 54,
+                height: 54,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    widget.open ? Icons.close : Icons.chat_bubble_outline_rounded,
+                    key: ValueKey(widget.open),
+                    color: color,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1097,55 +1268,53 @@ class _SettingsMenuOverlay extends StatelessWidget {
   }
 
   Widget _buildCyberpunk(BuildContext context) {
-    final cyan = const Color(0xFF00F0FF);
-    final yellow = const Color(0xFFFCE300);
-    return Container(
-      width: width,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        border: Border.fromBorderSide(
-          BorderSide(color: cyan.withValues(alpha: 0.7), width: 1.6),
-        ),
-        boxShadow: [BoxShadow(color: cyan.withValues(alpha: 0.35), blurRadius: 22)], 
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: background != null
-                ? Wallpaper(background).background(context)
-                : const ColoredBox(color: Color(0xFF120716)),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 7, 12, 4),
-                child: Row(
-                  children: [
-                    Text('//', style: TextStyle(color: yellow, fontSize: 12, fontWeight: FontWeight.w700)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'SYS://MENU',
-                      style: TextStyle(color: yellow, fontSize: 11, letterSpacing: 1.5),
+    const cyan = Color(0xFF00F0FF);
+    const red = Color(0xFFFF1A3C);
+    return ShapeBox(
+      shape: SurfaceShape.beveled(const BevelSpec(10, topLeft: true, bottomRight: true)),
+      borderColor: red,
+      borderWidth: 1.4,
+      child: SizedBox(
+        width: width,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: background != null
+                  ? Wallpaper(background).background(context)
+                  : const ColoredBox(color: Color(0xFF0C0608)),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, 6),
+                  child: Text(
+                    'SYS://MENU',
+                    style: TextStyle(
+                      color: red,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
                     ),
-                  ],
-                ),
-              ),
-              for (final item in items)
-                _row(
-                  context,
-                  item,
-                  const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  const Color(0x0AFCE300),
-                  (c, color, icon) => Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Icon(icon, size: 18, color: cyan),
                   ),
                 ),
-            ],
-          ),
-        ],
+                Container(height: 1, color: red.withValues(alpha: 0.3)),
+                for (final item in items)
+                  _row(
+                    context,
+                    item,
+                    const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    const Color(0x1400F0FF),
+                    (c, color, icon) => Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Icon(icon, size: 18, color: cyan),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

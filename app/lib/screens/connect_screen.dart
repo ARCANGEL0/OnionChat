@@ -13,7 +13,7 @@ import '../widgets/tor_progress_card.dart';
 import '../services/chat_client.dart';
 import 'chat_screen.dart';
 
-/// Connect to a friend's room by .onion address + optional password.
+/// Connect to a friend's room by .onion address.
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
 
@@ -23,13 +23,11 @@ class ConnectScreen extends StatefulWidget {
 
 class _ConnectScreenState extends State<ConnectScreen> {
   final _onionController = TextEditingController();
-  final _passController = TextEditingController();
   final _userController = TextEditingController();
   final _bioController = TextEditingController();
   String? _avatar;
 
   bool _connecting = false;
-  bool _showPass = false;
   String? _error;
   String _stage = '';
   String? _qrOnion;
@@ -52,7 +50,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
   Future<void> _connect() async {
     final onion = _onionController.text.trim().toLowerCase();
-    final password = _passController.text.trim();
     var username = _userController.text.trim();
 
     if (onion.isEmpty) {
@@ -63,7 +60,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
       setState(() => _error = 'Invalid .onion address.');
       return;
     }
-    // password is optional
 
     if (username.isEmpty) {
       username = 'friend';
@@ -83,7 +79,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
       id: roomId,
       name: onion,
       onion: onion,
-      password: password.isEmpty ? null : password,
       isOwner: false,
       username: username,
       createdAt: DateTime.now(),
@@ -145,14 +140,12 @@ class _ConnectScreenState extends State<ConnectScreen> {
 
   void _handleQr(String raw) {
     String onion = '';
-    String pass = '';
     String name = '';
     try {
       final uri = Uri.tryParse(raw.trim());
       if (uri != null) {
         final params = uri.queryParameters;
         onion = (params['onion'] ?? '').trim().toLowerCase();
-        pass = (params['pass'] ?? '').trim();
         name = (params['name'] ?? '').trim();
       }
     } catch (_) {}
@@ -166,13 +159,11 @@ class _ConnectScreenState extends State<ConnectScreen> {
       return;
     }
     _onionController.text = onion;
-    _passController.text = pass;
     _qrOnion = onion;
   }
 
   Future<void> _connectFromQr() async {
     if (_qrOnion == null) return;
-    final password = _passController.text.trim();
     var username = _userController.text.trim();
 
     if (username.isEmpty) {
@@ -193,7 +184,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
       id: roomId,
       name: roomId,
       onion: roomId,
-      password: password.isEmpty ? null : password,
       isOwner: false,
       username: username,
       createdAt: DateTime.now(),
@@ -247,7 +237,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
   @override
   void dispose() {
     _onionController.dispose();
-    _passController.dispose();
     _userController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -290,7 +279,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
         ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
-    final terminal = matrix || lain;
+    final cyberpunk = style == ThemeStyle.cyberpunk;
+    final terminal = matrix || lain || cyberpunk;
     final midnightFill = style == ThemeStyle.midnight
         ? scheme.surfaceContainerHighest.withValues(alpha: 0.3)
         : null;
@@ -342,28 +332,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _passController,
-          textCapitalization: TextCapitalization.none,
-          autocorrect: false,
-          obscureText: !_showPass,
-          decoration: InputDecoration(
-            labelText: 'Password (optional)',
-            hintText: 'Leave empty if no password',
-            prefixIcon: const Icon(Icons.lock),
-            suffixIcon: IconButton(
-              tooltip: _showPass ? 'Hide password' : 'Show password',
-              icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility),
-              onPressed: () => setState(() => _showPass = !_showPass),
-            ),
-            border: fieldBorder,
-            enabledBorder: fieldBorder,
-            focusedBorder: fieldFocused,
-            filled: midnightFill != null ? true : null,
-            fillColor: midnightFill,
-          ),
-        ),
-        const SizedBox(height: 16),
         PersonaEditor(
           nameController: _userController,
           bioController: _bioController,
@@ -378,20 +346,33 @@ class _ConnectScreenState extends State<ConnectScreen> {
           onPressed: _connecting ? null : _scanQr,
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: terminal
-                  ? const BorderRadius.all(Radius.circular(2))
-                  : const BorderRadius.all(Radius.circular(14)),
-            ),
-            foregroundColor: matrix ? const Color(0xFF00FF41) : null,
-            side: terminal
-                ? BorderSide(
-                    color: matrix
-                        ? const Color(0xFF00FF41)
-                        : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
-                    width: 1.2,
+            shape: cyberpunk
+                ? const BeveledRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(12),
+                      bottomLeft: Radius.circular(12),
+                    ),
                   )
-                : null,
+                : RoundedRectangleBorder(
+                    borderRadius: terminal
+                        ? const BorderRadius.all(Radius.circular(2))
+                        : const BorderRadius.all(Radius.circular(14)),
+                  ),
+            foregroundColor: cyberpunk
+                ? const Color(0xFF00F0FF)
+                : matrix
+                    ? const Color(0xFF00FF41)
+                    : null,
+            side: cyberpunk
+                ? const BorderSide(color: Color(0xFF00F0FF), width: 1.4)
+                : terminal
+                    ? BorderSide(
+                        color: matrix
+                            ? const Color(0xFF00FF41)
+                            : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                        width: 1.2,
+                      )
+                    : null,
           ),
           icon: const Icon(Icons.qr_code_scanner),
           label: const Text('Read QR code'),
@@ -423,21 +404,34 @@ class _ConnectScreenState extends State<ConnectScreen> {
           onPressed: _connecting ? null : _connect,
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: terminal
-                  ? const BorderRadius.all(Radius.circular(2))
-                  : const BorderRadius.all(Radius.circular(16)),
-            ),
-            backgroundColor: matrix ? Colors.transparent : null,
-            foregroundColor: matrix ? const Color(0xFF00FF41) : null,
-            side: terminal
-                ? BorderSide(
-                    color: matrix
-                        ? const Color(0xFF00FF41)
-                        : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
-                    width: 1,
+            shape: cyberpunk
+                ? const BeveledRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(14),
+                      bottomLeft: Radius.circular(14),
+                    ),
                   )
-                : null,
+                : RoundedRectangleBorder(
+                    borderRadius: terminal
+                        ? const BorderRadius.all(Radius.circular(2))
+                        : const BorderRadius.all(Radius.circular(16)),
+                  ),
+            backgroundColor: matrix || cyberpunk ? Colors.transparent : null,
+            foregroundColor: cyberpunk
+                ? const Color(0xFF00F0FF)
+                : matrix
+                    ? const Color(0xFF00FF41)
+                    : null,
+            side: cyberpunk
+                ? const BorderSide(color: Color(0xFF00F0FF), width: 1.6)
+                : terminal
+                    ? BorderSide(
+                        color: matrix
+                            ? const Color(0xFF00FF41)
+                            : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                        width: 1,
+                      )
+                    : null,
           ),
           icon: const Icon(Icons.call_merge_rounded),
           label: const Text(

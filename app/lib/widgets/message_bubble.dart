@@ -67,7 +67,8 @@ class MessageBubble extends StatelessWidget {
     final name = mine ? mineName : message.username;
     final edge = style.edgeColor;
     final glow = style.glowColor;
-    final gradient = style.gradientBubbles
+    final cyberTheirs = style == ThemeStyle.cyberpunk && !mine;
+    final gradient = style.gradientBubbles && !cyberTheirs
         ? LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -77,10 +78,14 @@ class MessageBubble extends StatelessWidget {
             ],
           )
         : null;
+    final fill = cyberTheirs
+        ? const Color(0xFFF4D400)
+        : bubbleColor;
+    final theirInk = const Color(0xFF12100A);
 
     final bubble = ShapeBox(
       shape: style.bubbleShapeFor(mine),
-      color: gradient == null ? bubbleColor : null,
+      color: gradient == null ? fill : null,
       gradient: gradient,
       borderColor: edge?.withValues(alpha: 0.55),
       borderWidth: style.borderWidth,
@@ -116,7 +121,9 @@ class MessageBubble extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
-                        color: mine ? bubbleText : senderColor,
+                        color: mine
+                            ? bubbleText
+                            : (cyberTheirs ? theirInk : senderColor),
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -129,7 +136,9 @@ class MessageBubble extends StatelessWidget {
                         fontSize: 11.5,
                         color: mine
                             ? bubbleText.withValues(alpha: 0.75)
-                            : scheme.onSurfaceVariant,
+                            : (cyberTheirs
+                                ? theirInk.withValues(alpha: 0.7)
+                                : scheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -145,7 +154,7 @@ class MessageBubble extends StatelessWidget {
                   style: TextStyle(
                     fontSize: chatFontSize,
                     height: 1.3,
-                    color: chatTextColor ?? bubbleText,
+                    color: cyberTheirs ? theirInk : (chatTextColor ?? bubbleText),
                     fontFamily: chatFont.isEmpty ? null : chatFont,
                   ),
                 ),

@@ -12,7 +12,7 @@ import '../services/room_store.dart';
 import '../state/room_controller.dart';
 import '../state/theme_controller.dart';
 import '../themes/theme_style.dart';
-import '../../utils/namegen.dart';
+import '../utils/namegen.dart';
 import '../services/onion_identity.dart';
 import '../widgets/persona_editor.dart';
 import '../widgets/app_toast.dart';
@@ -30,14 +30,12 @@ class CreateRoomScreen extends StatefulWidget {
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
   final _nameController = TextEditingController();
-  final _passController = TextEditingController();
   final _userController = TextEditingController();
   final _bioController = TextEditingController();
   String? _avatar;
   String? _chatPicture;
 
   bool _creating = false;
-  bool _showPass = false;
   String? _error;
   String _stage = '';
   String? _qrOnion;
@@ -46,7 +44,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   void initState() {
     super.initState();
     _nameController.text = NameGen.generate();
-    _passController.text = ''; // password is optional
     _chatPicture = AppAssets.randomChatPicture();
     _loadPersona();
   }
@@ -68,12 +65,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     });
   }
 
-  void _randomizePass() {
-    setState(() {
-      _passController.text = NameGen.randomPassword();
-    });
-  }
-
   Future<void> _uploadChatPicture() async {
     try {
       final path = await pickAndCropImage(context, circle: true);
@@ -92,14 +83,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   Future<void> _create() async {
     final name = _nameController.text.trim();
-    final password = _passController.text.trim();
     var username = _userController.text.trim();
 
     if (name.isEmpty) {
       setState(() => _error = 'Pick a name for your room.');
       return;
     }
-    // password is optional - empty means no password required
 
     if (username.isEmpty) {
       username = 'host';
@@ -114,14 +103,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     final store = await RoomStore.load();
     await store.setUsername(username);
 
-    // Generate a unique internal ID
     final roomId = 'room_${Random().nextInt(1<<30).toRadixString(16)}';
+    final password = NameGen.randomPassword();
 
     final room = Room(
       id: roomId,
       name: name,
-      onion: '', // will be filled after Tor starts
-      password: password.isEmpty ? null : password,
+      onion: '',
+      password: password,
       isOwner: true,
       username: username,
       createdAt: DateTime.now(),
@@ -173,14 +162,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   void _handleQr(String raw) {
     String onion = '';
-    String pass = '';
     String name = '';
     try {
       final uri = Uri.tryParse(raw.trim());
       if (uri != null) {
         final params = uri.queryParameters;
         onion = (params['onion'] ?? '').trim().toLowerCase();
-        pass = (params['pass'] ?? '').trim();
         name = (params['name'] ?? '').trim();
       }
     } catch (_) {}
@@ -193,14 +180,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       setState(() => _error = "That QR doesn't look like an OnionChat invite.");
       return;
     }
-    _passController.text = pass;
     _nameController.text = name.isNotEmpty ? name : onion;
     _qrOnion = onion;
   }
 
   Future<void> _connectFromQr() async {
     if (_qrOnion == null) return;
-    final password = _passController.text.trim();
     var username = _userController.text.trim();
     final name = _nameController.text.trim();
 
@@ -222,7 +207,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       id: roomId,
       name: name.isNotEmpty ? name : roomId,
       onion: roomId,
-      password: password.isEmpty ? null : password,
       isOwner: false,
       username: username,
       createdAt: DateTime.now(),
@@ -277,7 +261,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _passController.dispose();
     _userController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -329,7 +312,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
-    final terminal = matrix || lain;
+    final cyberpunk = style == ThemeStyle.cyberpunk;
+    final terminal = matrix || lain || cyberpunk;
     final midnightFill = style == ThemeStyle.midnight
         ? scheme.surfaceContainerHighest.withValues(alpha: 0.3)
         : null;
@@ -347,7 +331,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           ).animate().fadeIn(duration: 250.ms),
           const SizedBox(height: 8),
           Text(
-            'Give your room a name and optional password.\nYour .onion address will be generated automatically.',
+            'Give your room a name.\nYour .onion address will be generated automatically.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -370,33 +354,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             ),
             onChanged: (_) => setState(() => _error = null),
           ).animate().fadeIn(duration: 250.ms, delay: 150.ms),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _passController,
-            obscureText: !_showPass,
-            decoration: InputDecoration(
-              labelText: 'Password (optional)',
-              hintText: 'Leave empty for no password',
-              prefixIcon: const Icon(Icons.lock),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _showPass = !_showPass),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.shuffle),
-                    onPressed: _randomizePass,
-                    tooltip: 'Randomize',
-                  ),
-                ],
-              ),
-              filled: midnightFill != null ? true : null,
-              fillColor: midnightFill,
-            ),
-            onChanged: (_) => setState(() => _error = null),
-          ).animate().fadeIn(duration: 250.ms, delay: 200.ms),
           const SizedBox(height: 16),
           PersonaEditor(
             nameController: _userController,
@@ -439,23 +396,34 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             onPressed: _creating ? null : _create,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(terminal ? 2 : 16),
-              ),
-              backgroundColor: terminal
-                  ? (matrix ? Colors.transparent : const Color(0xFF16121F))
-                  : null,
-              foregroundColor: terminal
-                  ? (matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2))
-                  : null,
-              side: terminal
-                  ? BorderSide(
-                      color: matrix
-                          ? const Color(0xFF00FF41)
-                          : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
-                      width: 1,
+              shape: cyberpunk
+                  ? const BeveledRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(14),
+                        bottomLeft: Radius.circular(14),
+                      ),
                     )
+                  : RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(terminal ? 2 : 16),
+                    ),
+              backgroundColor: terminal
+                  ? (matrix || cyberpunk ? Colors.transparent : const Color(0xFF16121F))
                   : null,
+              foregroundColor: cyberpunk
+                  ? const Color(0xFF00F0FF)
+                  : terminal
+                      ? (matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2))
+                      : null,
+              side: cyberpunk
+                  ? const BorderSide(color: Color(0xFF00F0FF), width: 1.6)
+                  : terminal
+                      ? BorderSide(
+                          color: matrix
+                              ? const Color(0xFF00FF41)
+                              : const Color(0xFF4A6B6B).withValues(alpha: 0.7),
+                          width: 1,
+                        )
+                      : null,
             ),
             icon: const Icon(Icons.add_chart),
             label: const Text(
@@ -531,12 +499,18 @@ class _ChatPicturePicker extends StatelessWidget {
         ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
-    final terminal = matrix || lain;
+    final cyberpunk = style == ThemeStyle.cyberpunk;
+    final terminal = matrix || lain || cyberpunk;
     final borderColor = matrix
         ? const Color(0xFF00FF41)
-        : const Color(0xFF4A6B6B).withValues(alpha: 0.7);
-    final iconColor =
-        matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2);
+        : cyberpunk
+            ? const Color(0xFFFF1A3C)
+            : const Color(0xFF4A6B6B).withValues(alpha: 0.7);
+    final iconColor = matrix
+        ? const Color(0xFF00FF41)
+        : cyberpunk
+            ? const Color(0xFF00F0FF)
+            : const Color(0xFFB1A8C2);
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -692,7 +666,7 @@ class _QrScannerState extends State<_QrScanner> {
           ),
           const Padding(
             padding: EdgeInsets.all(16),
-            child: Text('Point camera at a QR code containing onion + password + name'),
+            child: Text('Point camera at an OnionChat QR invite'),
           ),
         ],
       ),

@@ -242,7 +242,7 @@ enum ThemeStyle {
         return SurfaceShape.beveled(BevelSpec(12,
             topLeft: mine, bottomRight: mine, topRight: !mine, bottomLeft: !mine));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(BevelSpec(16,
+        return SurfaceShape.beveled(BevelSpec(8,
             topRight: mine, bottomLeft: mine, topLeft: !mine, bottomRight: !mine));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
@@ -270,7 +270,7 @@ enum ThemeStyle {
       case ThemeStyle.lain:
         return const SurfaceShape.rounded(BorderRadius.all(Radius.circular(2)));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(const BevelSpec(14, topLeft: true, bottomRight: true));
+        return SurfaceShape.beveled(const BevelSpec(6, topLeft: true, bottomRight: true));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
           topLeft: Radius.circular(14),
@@ -292,7 +292,7 @@ enum ThemeStyle {
       case ThemeStyle.lain:
         return const SurfaceShape.rounded(BorderRadius.all(Radius.circular(2)));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(const BevelSpec(12, topRight: true, bottomLeft: true));
+        return SurfaceShape.beveled(const BevelSpec(6, topRight: true, bottomLeft: true));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -314,7 +314,7 @@ enum ThemeStyle {
       case ThemeStyle.lain:
         return const SurfaceShape.rounded(BorderRadius.all(Radius.circular(4)));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(const BevelSpec(10, topRight: true, bottomLeft: true));
+        return SurfaceShape.beveled(const BevelSpec(6, topRight: true, bottomLeft: true));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
           topLeft: Radius.circular(22),
@@ -336,7 +336,7 @@ enum ThemeStyle {
       case ThemeStyle.lain:
         return const SurfaceShape.rounded(BorderRadius.all(Radius.circular(2)));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(const BevelSpec(8, topRight: true, bottomLeft: true));
+        return SurfaceShape.beveled(const BevelSpec(4, topRight: true, bottomLeft: true));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
           topLeft: Radius.circular(18),
@@ -358,7 +358,7 @@ enum ThemeStyle {
       case ThemeStyle.lain:
         return const SurfaceShape.rounded(BorderRadius.all(Radius.circular(2)));
       case ThemeStyle.cyberpunk:
-        return SurfaceShape.beveled(const BevelSpec(14, topRight: true, bottomLeft: true));
+        return SurfaceShape.beveled(const BevelSpec(6, topRight: true, bottomLeft: true));
       case ThemeStyle.bladerunner:
         return const SurfaceShape.rounded(BorderRadius.only(
           topLeft: Radius.circular(18),
@@ -411,6 +411,14 @@ enum ThemeStyle {
 
   bool get useGlitch => this == ThemeStyle.lain;
 
+  bool get useHudGrid => this == ThemeStyle.lain;
+
+  bool get useRedVignette => false;
+
+  /// Chromatic-split tear colors for [useGlitch], tuned per theme.
+  List<Color> get glitchTearColors =>
+      const [Color(0x08A0FFFF), Color(0x08FF40FF)];
+
   bool get gradientBubbles => switch (this) {
         ThemeStyle.cyberpunk ||
         ThemeStyle.matrix ||
@@ -424,7 +432,7 @@ enum ThemeStyle {
     final c = switch (this) {
       ThemeStyle.matrix => 0xFF00FF41,
       ThemeStyle.lain => 0xFF4A6B6B,
-      ThemeStyle.cyberpunk => 0xFF00F0FF,
+      ThemeStyle.cyberpunk => 0xFFFF1A3C,
       ThemeStyle.bladerunner => 0xFFFFB347,
       _ => null,
     };
@@ -435,7 +443,6 @@ enum ThemeStyle {
     final c = switch (this) {
       ThemeStyle.matrix => 0xFF00FF41,
       ThemeStyle.lain => 0xFFFF0066,
-      ThemeStyle.cyberpunk => 0xFFFCE300,
       ThemeStyle.bladerunner => 0xFFFF2A6D,
       _ => null,
     };
@@ -445,7 +452,6 @@ enum ThemeStyle {
   double get glowBlur => switch (this) {
         ThemeStyle.matrix => 10,
         ThemeStyle.lain => 5,
-        ThemeStyle.cyberpunk => 14,
         ThemeStyle.bladerunner => 10,
         _ => 0,
       };
@@ -453,7 +459,7 @@ enum ThemeStyle {
   double get borderWidth => switch (this) {
         ThemeStyle.matrix => 1.2,
         ThemeStyle.lain => 0.8,
-        ThemeStyle.cyberpunk => 1.6,
+        ThemeStyle.cyberpunk => 1.8,
         ThemeStyle.bladerunner => 1.2,
         _ => 0,
       };
@@ -467,7 +473,7 @@ enum ThemeStyle {
       case ThemeStyle.matrix:
         return const Color(0xFF06230F);
       case ThemeStyle.cyberpunk:
-        return const Color(0xFF1A1B26);
+        return const Color(0xFF201419);
       case ThemeStyle.bladerunner:
         return const Color(0xFF1A1430);
       default:
@@ -480,7 +486,7 @@ enum ThemeStyle {
         ThemeStyle.matrix => const [Color(0xFF00FF41), Color(0xFF007A20)],
         ThemeStyle.lain => const [Color(0xFFFF4D8D), Color(0xFF8A0030)],
         ThemeStyle.cyberpunk =>
-          const [Color(0xFFFCE300), Color(0xFFFF1A3C)],
+          const [Color(0xFFFF3B3B), Color(0xFF8B0000)],
         ThemeStyle.bladerunner =>
           const [Color(0xFF00E5FF), Color(0xFFFF2A6D)],
         _ => const [Color(0xFF5B2DD3), Color(0xFF8B5CF6)],
@@ -542,6 +548,12 @@ OutlineInputBorder inputFieldBorder(ThemeStyle style, double radius,
         color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
         width: width,
       ),
+    );
+  }
+  if (style == ThemeStyle.cyberpunk) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(2),
+      borderSide: BorderSide(color: const Color(0xFFFF1A3C), width: width),
     );
   }
   final r = style == ThemeStyle.matrix ? 0.0 : radius;

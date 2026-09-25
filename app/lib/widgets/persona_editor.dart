@@ -42,21 +42,26 @@ class PersonaEditor extends StatelessWidget {
         ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
     final matrix = style == ThemeStyle.matrix;
     final lain = style == ThemeStyle.lain;
-    final terminal = matrix || lain;
+    final cyberpunk = style == ThemeStyle.cyberpunk;
+    final terminal = matrix || lain || cyberpunk;
     final radius = 14.0;
     final border = inputFieldBorder(style, radius, width: 1.2);
-    final focused = matrix || lain
+    final focused = matrix || lain || cyberpunk
         ? inputFieldBorder(style, radius, width: 1.8)
         : OutlineInputBorder(
             borderRadius: BorderRadius.circular(radius),
             borderSide: BorderSide(color: scheme.primary, width: 2),
           );
-    final avatarBorderColor =
-        matrix
-            ? const Color(0xFF00FF41)
+    final avatarBorderColor = matrix
+        ? const Color(0xFF00FF41)
+        : cyberpunk
+            ? const Color(0xFFFF1A3C)
             : const Color(0xFF4A6B6B).withValues(alpha: 0.7);
-    final avatarIconColor =
-        matrix ? const Color(0xFF00FF41) : const Color(0xFFB1A8C2);
+    final avatarIconColor = matrix
+        ? const Color(0xFF00FF41)
+        : cyberpunk
+            ? const Color(0xFF00F0FF)
+            : const Color(0xFFB1A8C2);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

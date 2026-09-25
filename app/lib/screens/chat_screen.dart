@@ -532,6 +532,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final chatHeaderText = tc.settings.chatHeaderText != null
         ? Color(tc.settings.chatHeaderText!)
         : null;
+    final isCyberpunk =
+        ThemeStyle.fromId(tc.settings.themeStyle) == ThemeStyle.cyberpunk;
+    const cpCyan = Color(0xFF00F0FF);
 
     return ListenableBuilder(
       listenable: c,
@@ -565,12 +568,19 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: Text(
                             widget.room.name,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: isCyberpunk ? cpCyan : null,
+                            ),
                           ),
                         ),
                         if (widget.room.isOwner) ...[
                           const SizedBox(width: 6),
-                          const Icon(Icons.dns, size: 15),
+                          Icon(
+                            Icons.dns,
+                            size: 15,
+                            color: isCyberpunk ? cpCyan : null,
+                          ),
                         ],
                       ],
                     ),
@@ -578,7 +588,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       _subtitle(c, scheme),
                       style: TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurfaceVariant,
+                        color: isCyberpunk
+                            ? cpCyan.withValues(alpha: 0.75)
+                            : scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -586,19 +598,34 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
+          bottom: isCyberpunk
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(2),
+                  child: Container(
+                    height: 1,
+                    color: const Color(0xFFFF1A3C),
+                  ),
+                )
+              : null,
           actions: [
             if (widget.room.isOwner)
               IconButton(
                 tooltip: 'Invite',
-                icon: const Icon(Icons.add),
+                icon: Icon(Icons.add, color: isCyberpunk ? cpCyan : null),
                 onPressed: _showInvite,
               ),
             IconButton(
               tooltip: 'Members',
-              icon: const Icon(Icons.people_outline),
+              icon: Icon(
+                Icons.people_outline,
+                color: isCyberpunk ? cpCyan : null,
+              ),
               onPressed: _showMembers,
             ),
             PopupMenuButton<String>(
+              icon: isCyberpunk
+                  ? const Icon(Icons.more_vert, color: cpCyan)
+                  : null,
               onSelected: (v) {
                 if (v == 'wallpaper') _changeWallpaper();
                 if (v == 'chatSettings') _openChatSettings();
@@ -1226,6 +1253,7 @@ class _InputBar extends StatelessWidget {
     final s = tc.settings;
     final style = ChatTheme.of(context).style;
     final isLain = style == ThemeStyle.lain;
+    final isCyberpunk = style == ThemeStyle.cyberpunk;
     final chatFont = s.chatFont.trim().isEmpty ? null : s.chatFont;
     final barColor = s.inputBar != null
         ? Color(s.inputBar!)
@@ -1342,21 +1370,26 @@ class _InputBar extends StatelessWidget {
                     offset: const Offset(0, -2.5),
                     child: ShapeBox(
                       shape: style.buttonShape,
-                      color: style == ThemeStyle.matrix
+                      color: style == ThemeStyle.matrix || isCyberpunk
                           ? Colors.transparent
                           : null,
-                      gradient:
-                          style == ThemeStyle.matrix ? null : sendGradient,
+                      gradient: style == ThemeStyle.matrix || isCyberpunk
+                          ? null
+                          : sendGradient,
                       borderColor: style == ThemeStyle.matrix
                           ? const Color(0xFF00FF41).withValues(alpha: 0.9)
-                          : edge != null
-                              ? edge.withValues(alpha: 0.6)
-                              : null,
+                          : isCyberpunk
+                              ? const Color(0xFF00F0FF)
+                              : edge != null
+                                  ? edge.withValues(alpha: 0.6)
+                                  : null,
                       borderWidth: style.borderWidth,
                       glowColor: style == ThemeStyle.matrix
                           ? const Color(0xFF00FF41)
-                          : style.glowColor ??
-                              buttonColor.withValues(alpha: 0.35),
+                          : isCyberpunk
+                              ? null
+                              : style.glowColor ??
+                                  buttonColor.withValues(alpha: 0.35),
                       glowBlur: style.glowBlur > 0 ? style.glowBlur : 10,
                       child: InkWell(
                         customBorder: style.outlinedButtonShape,
@@ -1371,9 +1404,11 @@ class _InputBar extends StatelessWidget {
                                 ? const Color(0xFF00FF41).withValues(
                                     alpha: canSend ? 1 : 0.5,
                                   )
-                                : Colors.white.withValues(
-                                    alpha: canSend ? 1 : 0.6,
-                                  ),
+                                : isCyberpunk
+                                    ? const Color(0xFF00F0FF)
+                                    : Colors.white.withValues(
+                                        alpha: canSend ? 1 : 0.6,
+                                      ),
                           ),
                         ),
                       ),

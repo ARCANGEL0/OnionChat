@@ -21,7 +21,6 @@ class ChatClient {
 
   TorWebSocket? _ws;
   bool _disposed = false;
-  String? _password;
 
   final _messages = StreamController<ChatMessage>.broadcast();
   Stream<ChatMessage> get messages => _messages.stream;
@@ -43,10 +42,6 @@ class ChatClient {
   /// `profile` message (with `oldUsername` and the updated member fields).
   final _onProfile = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get onProfile => _onProfile.stream;
-
-  /// Fired when authentication failed (wrong password).
-  final _onAuthFailed = StreamController<void>.broadcast();
-  Stream<void> get onAuthFailed => _onAuthFailed.stream;
 
   /// Fired when the host put our join on hold: entry needs approval.
   final _onPending = StreamController<void>.broadcast();
@@ -94,8 +89,7 @@ class ChatClient {
   /// Quick connection test to check if an onion service exists.
   /// Returns true if connection succeeds (room exists), false otherwise.
   static Future<bool> tryConnect(
-    String onionHost,
-    String password, {
+    String onionHost, {
     Duration timeout = const Duration(seconds: 8),
     String socksHost = '127.0.0.1',
     int socksPort = 9050,
@@ -117,18 +111,15 @@ class ChatClient {
 
   bool get isConnected => _ws != null;
 
-  /// Connects, performs the SOCKS + WebSocket handshake and sends [password].
-  ///
-  /// If password is null/empty, no auth is sent (open room).
+  /// Connects, performs the SOCKS + WebSocket handshake and sends an auth frame.
   ///
   /// Retries for a while: right after a room is created (or its host
   /// restarts) the hidden service descriptor can take up to a minute to
   /// propagate, so the first attempts often fail with "host unreachable" even
   /// though the room is reachable moments later. We keep trying with backoff
   /// for roughly three and a half minutes before giving up.
-  Future<void> connect({String? password}) async {
+  Future<void> connect() async {
     if (_disposed) throw StateError('ChatClient was disposed');
-    _password = password;
     Object? lastError;
     for (var attempt = 1; attempt <= 8; attempt++) {
       if (_disposed) throw StateError('ChatClient was closed');
@@ -139,7 +130,7 @@ class ChatClient {
       if (_disposed) throw StateError('ChatClient was closed');
       try {
         debugPrint('[CLIENT] attempt $attempt of 8 → $targetHost:$targetPort');
-        await _attemptConnect(password);
+        await _attemptConnect();
         debugPrint('[CLIENT] connected!');
         return;
       } catch (e) {
@@ -155,7 +146,7 @@ class ChatClient {
     throw lastError!;
   }
 
-  Future<void> _attemptConnect(String? password) async {
+  Future<void> _attemptConnect() async {
     if (_disposed) throw StateError('ChatClient was closed');
     final socks = Socks5Client(proxyHost: socksHost, proxyPort: socksPort);
     final conn = await socks.connect(
@@ -166,15 +157,10 @@ class ChatClient {
     final ws = await TorWebSocket.connect(conn, targetHost);
     _ws = ws;
     ws.closed.listen((_) {
-      // A deliberate close() (user left the room / session teardown) must not
-      // surface as an unexpected disconnect.
       if (!_disposed) _onClose.add(null);
     });
     ws.text.listen(_onData);
-    // Always send an auth frame so the host replies deterministically:
-    // a `prompt` when the room accepts us, or `auth_failed` otherwise. Sending
-    // nothing would leave both sides waiting forever (host never issues prompt).
-    ws.sendText(ChatProtocol.encodeAuth(password));
+    ws.sendText(ChatProtocol.encodeAuth(null));
   }
 
   void sendUsername(
@@ -200,7 +186,7 @@ class ChatClient {
         socksPort: socksPort,
         targetHost: targetHost,
         targetPort: targetPort,
-        roomKey: _password ?? '',
+        roomKey: '',
       );
 
   /// Pushes media [bytes] to the host over Tor HTTP and returns its [mediaId].
@@ -338,7 +324,6 @@ class ChatClient {
     await _onReady.close();
     await _onMember.close();
     await _onProfile.close();
-    await _onAuthFailed.close();
     await _onPending.close();
     await _onDenied.close();
     await _onKicked.close();

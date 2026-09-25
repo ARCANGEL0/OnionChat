@@ -17,6 +17,8 @@ class AppAssets {
 
   static const String icon = 'assets/icon.png';
   static const String wiredLogo = 'assets/misc/wired.png';
+  static const String arasakaWordmark = 'assets/misc/arasaka.png';
+  static const String arasakaLogo = 'assets/misc/arasaka_logo.png';
   static const String pfpDefault = 'assets/pfp/1.png';
 
   static const List<String> wallpapers = [

@@ -137,7 +137,10 @@ class ChatHost {
     _ownerAvatarData = _avatarDataFor(ownerAvatar);
     _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
     _server!.listen(_onRequest);
-    _emitSystem('$ownerUsername started the room (hidden service online)');
+    if (!ownerJoined) {
+      _emitSystem('$ownerUsername started the room (hidden service online)');
+      ownerJoined = true;
+    }
   }
 
   /// Broadcasts a message as the owner, exactly like a remote client would.
@@ -189,18 +192,10 @@ class ChatHost {
     );
   }
 
-  bool _isRoomKey(String? key) {
-    if (password == null || password!.isEmpty) return true;
-    return key == password;
-  }
+  bool _isRoomKey(String? key) => true;
 
   Future<void> _handleMediaUpload(HttpRequest request) async {
     try {
-      if (!_isRoomKey(request.headers.value('x-room-key'))) {
-        request.response.statusCode = HttpStatus.forbidden;
-        await request.response.close();
-        return;
-      }
       final length = request.contentLength;
       if (length <= 0 || length > maxMediaBytes) {
         request.response.statusCode = HttpStatus.requestEntityTooLarge;
@@ -521,13 +516,6 @@ class ChatHost {
 
     switch (msg['type']) {
       case ChatProtocol.kAuth:
-        if (password != null && password!.isNotEmpty) {
-          final sent = msg['password'] as String? ?? '';
-          if (sent != password) {
-            _send(client, {'type': ChatProtocol.kAuthFailed, 'text': 'WRONG ACCESS CODE'});
-            return;
-          }
-        }
         client.authed = true;
         _send(client, {'type': ChatProtocol.kPrompt, 'step': 'username'});
         break;
@@ -694,14 +682,6 @@ class ChatHost {
     final update = {'type': ChatProtocol.kProfile, 'oldUsername': oldUsername, ...member};
     _broadcast(update);
     _onProfile.add(update);
-  }
-
-  /// Updates the room's password. If [password] is null or empty, the room
-  /// becomes open (no password required).
-  void updatePassword(String? password) {
-    final newPass = password?.trim().isEmpty ?? true ? null : password!.trim();
-    if (password == newPass) return;
-    password = newPass;
   }
 
   Map<String, dynamic> _clientMember(_HostClient c) => ChatProtocol.memberJson(

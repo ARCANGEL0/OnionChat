@@ -175,11 +175,14 @@ class _OnionChatAppState extends State<OnionChatApp>
             : ElevatedButton.styleFrom(shape: style.outlinedButtonShape),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: !(style == ThemeStyle.matrix || style == ThemeStyle.lain),
-        fillColor:
-            style == ThemeStyle.matrix || style == ThemeStyle.lain
-                ? Colors.transparent
-                : null,
+        filled: !(style == ThemeStyle.matrix ||
+            style == ThemeStyle.lain ||
+            style == ThemeStyle.cyberpunk),
+        fillColor: style == ThemeStyle.matrix ||
+                style == ThemeStyle.lain ||
+                style == ThemeStyle.cyberpunk
+            ? Colors.transparent
+            : null,
         border: _inputBorder(style, width: 1.2),
         enabledBorder: _inputBorder(style, width: 1.2),
         focusedBorder: _inputBorder(style, width: 1.8),
@@ -223,6 +226,12 @@ class _OnionChatAppState extends State<OnionChatApp>
           color: const Color(0xFF4A6B6B).withValues(alpha: 0.7),
           width: width,
         ),
+      );
+    }
+    if (style == ThemeStyle.cyberpunk) {
+      return OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: const Color(0xFFFF1A3C), width: width),
       );
     }
     return OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none);

@@ -542,12 +542,65 @@ class _SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      secondary: Icon(icon),
+    final style =
+        ThemeStyle.fromId(ThemeController.instance.settings.themeStyle);
+    final scheme = Theme.of(context).colorScheme;
+    final neon = style.edgeColor ?? scheme.primary;
+    final knob =
+        style == ThemeStyle.cyberpunk ? const Color(0xFF00F0FF) : neon;
+    return ListTile(
+      leading: Icon(icon),
       title: Text(title),
       subtitle: subtitle == null ? null : Text(subtitle!),
-      value: value,
-      onChanged: onChanged,
+      onTap: () => onChanged(!value),
+      trailing: _SquareSwitch(
+        value: value,
+        onChanged: onChanged,
+        neon: neon,
+        knob: knob,
+      ),
+    );
+  }
+}
+
+class _SquareSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final Color neon;
+  final Color knob;
+
+  const _SquareSwitch({
+    required this.value,
+    required this.onChanged,
+    required this.neon,
+    required this.knob,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Container(
+        width: 52,
+        height: 28,
+        decoration: BoxDecoration(
+          color: value ? neon.withValues(alpha: 0.3) : Colors.transparent,
+          border: Border.all(
+            color: value ? neon : neon.withValues(alpha: 0.6),
+            width: 1.8,
+          ),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 140),
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 20,
+            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            color: value ? knob : neon.withValues(alpha: 0.6),
+          ),
+        ),
+      ),
     );
   }
 }

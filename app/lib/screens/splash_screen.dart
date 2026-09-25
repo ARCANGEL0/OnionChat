@@ -54,6 +54,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (ThemeStyle.fromId(s.themeStyle) == ThemeStyle.lain) {
       return _lainSplash(s);
     }
+    if (ThemeStyle.fromId(s.themeStyle) == ThemeStyle.cyberpunk) {
+      return _cyberpunkSplash(s);
+    }
     final scheme = Theme.of(context).colorScheme;
     final logoColor =
         Color(s.logoColor ?? AppSettings.defaultLogoColor);
@@ -137,6 +140,70 @@ class _SplashScreenState extends State<SplashScreen> {
             ).animate().fadeIn(duration: 900.ms, delay: 300.ms),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _cyberpunkSplash(AppSettings s) {
+    const bright = Color(0xFFFF3B3B);
+    const dim = Color(0xFFB0263A);
+    final bg = s.splashBackground != null
+        ? Color(s.splashBackground!)
+        : (s.background != null ? Color(s.background!) : const Color(0xFF0A0507));
+    return Scaffold(
+      backgroundColor: bg,
+      body: Stack(
+        children: [
+          const Positioned(top: 16, left: 16, child: _CornerTick(label: '01')),
+          const Positioned(top: 16, right: 16, child: _CornerTick(label: '02')),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const _CyberpunkGlitchLogo(),
+                const SizedBox(height: 26),
+                Text(
+                  'ARASAKA',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 4,
+                    color: bright,
+                    fontFamily: 'Orbitron',
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+                const SizedBox(height: 8),
+                Container(
+                  width: 42,
+                  height: 2,
+                  color: dim,
+                ).animate().fadeIn(duration: 400.ms, delay: 350.ms),
+                const SizedBox(height: 10),
+                const Text(
+                  'ENCRYPTED TOR MESSENGER',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w500,
+                    color: dim,
+                    fontFamily: 'Orbitron',
+                  ),
+                ).animate().fadeIn(duration: 500.ms, delay: 450.ms),
+                const SizedBox(height: 44),
+                SizedBox(
+                  width: 150,
+                  height: 2,
+                  child: LinearProgressIndicator(
+                    minHeight: 2,
+                    borderRadius: BorderRadius.zero,
+                    color: bright,
+                    backgroundColor: const Color(0xFF2A1116),
+                  ),
+                ).animate().fadeIn(duration: 400.ms, delay: 700.ms),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -425,6 +492,99 @@ class _LainGlitchLogoState extends State<_LainGlitchLogo>
           ],
         );
       },
+    );
+  }
+}
+
+class _CyberpunkGlitchLogo extends StatefulWidget {
+  const _CyberpunkGlitchLogo();
+
+  @override
+  State<_CyberpunkGlitchLogo> createState() => _CyberpunkGlitchLogoState();
+}
+
+class _CyberpunkGlitchLogoState extends State<_CyberpunkGlitchLogo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 4200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        final burst = t > 0.85 && t < 0.92;
+        final phase = (t - 0.85) / 0.07;
+        final sh = burst ? sin(phase * pi * 16.0) * 3.0 : 0.0;
+        final logo = Image.asset(
+          AppAssets.arasakaLogo,
+          width: 92,
+          height: 92,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+        );
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            if (burst)
+              Opacity(
+                opacity: 0.4,
+                child: Transform.translate(
+                  offset: Offset(-sh, 0),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFFFF1A3C),
+                      BlendMode.srcIn,
+                    ),
+                    child: logo,
+                  ),
+                ),
+              ),
+            if (burst)
+              Opacity(
+                opacity: 0.4,
+                child: Transform.translate(
+                  offset: Offset(sh, 0),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF00F0FF),
+                      BlendMode.srcIn,
+                    ),
+                    child: logo,
+                  ),
+                ),
+              ),
+            logo,
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// HUD corner-bracket frame.
+class _CornerTick extends StatelessWidget {
+  final String label;
+  const _CornerTick({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 10,
+        letterSpacing: 1,
+        color: Color(0x80FF1A3C),
+      ),
     );
   }
 }

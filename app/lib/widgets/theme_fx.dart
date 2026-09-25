@@ -20,10 +20,17 @@ class ThemeFX extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         child,
-        if (style == ThemeStyle.lain)
+        if (style.useRedVignette)
+          const IgnorePointer(
+            child: CustomPaint(painter: _RedVignettePainter()),
+          ),
+        if (style.useHudGrid)
           IgnorePointer(
             child: CustomPaint(
-              painter: _GridViewPainter(headerHeight: headerHeight),
+              painter: _GridViewPainter(
+                headerHeight: headerHeight,
+                lineColor: style.edgeColor ?? const Color(0xFF4A6B6B),
+              ),
             ),
           ),
         if (style.useScanlines)
@@ -31,7 +38,7 @@ class ThemeFX extends StatelessWidget {
             child: CustomPaint(painter: _ScanlinesPainter()),
           ),
         if (style.useGlitch)
-          const IgnorePointer(child: _GlitchOverlay()),
+          IgnorePointer(child: _GlitchOverlay(tearColors: style.glitchTearColors)),
       ],
     );
   }
@@ -42,22 +49,23 @@ class ThemeFX extends StatelessWidget {
 /// band (status bar + app bar) so content there reads more solid.
 class _GridViewPainter extends CustomPainter {
   final double headerHeight;
+  final Color lineColor;
 
-  const _GridViewPainter({required this.headerHeight});
+  const _GridViewPainter({required this.headerHeight, required this.lineColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     final minor = Paint()
-      ..color = const Color(0x0A4A6B6B)
+      ..color = lineColor.withValues(alpha: 0.04)
       ..strokeWidth = 1;
     final major = Paint()
-      ..color = const Color(0x144A6B6B)
+      ..color = lineColor.withValues(alpha: 0.08)
       ..strokeWidth = 1;
     final headMinor = Paint()
-      ..color = const Color(0x044A6B6B)
+      ..color = lineColor.withValues(alpha: 0.015)
       ..strokeWidth = 1;
     final headMajor = Paint()
-      ..color = const Color(0x084A6B6B)
+      ..color = lineColor.withValues(alpha: 0.03)
       ..strokeWidth = 1;
     final h = (headerHeight > 0 && headerHeight < size.height)
         ? headerHeight
@@ -101,7 +109,36 @@ class _GridViewPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GridViewPainter oldDelegate) =>
-      oldDelegate.headerHeight != headerHeight;
+      oldDelegate.headerHeight != headerHeight ||
+      oldDelegate.lineColor != lineColor;
+}
+
+class _RedVignettePainter extends CustomPainter {
+  const _RedVignettePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final paint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.bottomCenter,
+        radius: 1.1,
+        colors: const [Color(0x1FFF1A3C), Colors.transparent],
+        stops: const [0.0, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, paint);
+
+    final cornerPaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.topLeft,
+        radius: 0.9,
+        colors: const [Color(0x14FF1A3C), Colors.transparent],
+      ).createShader(rect);
+    canvas.drawRect(rect, cornerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RedVignettePainter oldDelegate) => false;
 }
 
 class _ScanlinesPainter extends CustomPainter {
@@ -126,7 +163,9 @@ class _ScanlinesPainter extends CustomPainter {
 
 /// Random glitch tears now and then. Kept very faint and rare.
 class _GlitchOverlay extends StatefulWidget {
-  const _GlitchOverlay();
+  final List<Color> tearColors;
+
+  const _GlitchOverlay({required this.tearColors});
 
   @override
   State<_GlitchOverlay> createState() => _GlitchOverlayState();
@@ -150,7 +189,10 @@ class _GlitchOverlayState extends State<_GlitchOverlay>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => CustomPaint(
-        painter: _GlitchPainter(seed: (_controller.value * 1200).round()),
+        painter: _GlitchPainter(
+          seed: (_controller.value * 1200).round(),
+          tearColors: widget.tearColors,
+        ),
       ),
     );
   }
@@ -158,27 +200,29 @@ class _GlitchOverlayState extends State<_GlitchOverlay>
 
 class _GlitchPainter extends CustomPainter {
   final int seed;
+  final List<Color> tearColors;
 
-  const _GlitchPainter({required this.seed});
+  const _GlitchPainter({required this.seed, required this.tearColors});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rand = math.Random(seed);
     if (rand.nextDouble() > 0.07) return;
-    final cyan = Paint()..color = const Color(0x08A0FFFF);
-    final magenta = Paint()..color = const Color(0x08FF40FF);
+    final paints = [
+      for (final c in tearColors) Paint()..color = c,
+    ];
     final tears = rand.nextDouble() < 0.5 ? 1 : 2;
     for (var i = 0; i < tears; i++) {
       final y = rand.nextDouble() * size.height;
       final h = 1.0 + rand.nextDouble() * 2.0;
       canvas.drawRect(
         Rect.fromLTWH(0, y, size.width, h),
-        i.isEven ? cyan : magenta,
+        paints[i % paints.length],
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant _GlitchPainter oldDelegate) =>
-      oldDelegate.seed != seed;
+      oldDelegate.seed != seed || oldDelegate.tearColors != tearColors;
 }
